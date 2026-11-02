@@ -1,6 +1,7 @@
 {
   "id": "audiobookshelf",
   "name": "Audiobookshelf",
+  "color": "#c47f2c",
   "description": "Audiobooks and podcasts with progress sync",
   "portParam": "ABS_PORT",
   "healthPath": "/healthcheck",

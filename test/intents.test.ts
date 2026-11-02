@@ -32,9 +32,9 @@ describe('step', () => {
     expect(step(state, [pad([15], [1, 0])], 0)).toEqual(['right'])
   })
 
-  it('maps shoulders, triggers, start and guide', () => {
-    expect(step(new Map(), [pad([4, 5, 6, 7, 9, 16])], 0)).toEqual(
-      ['page-prev', 'page-next', 'page-up', 'page-down', 'menu', 'home'],
+  it('maps X, shoulders, triggers, start and guide', () => {
+    expect(step(new Map(), [pad([2, 4, 5, 6, 7, 9, 16])], 0)).toEqual(
+      ['search', 'page-prev', 'page-next', 'page-up', 'page-down', 'menu', 'home'],
     )
   })
 })

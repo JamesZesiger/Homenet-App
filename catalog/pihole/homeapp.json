@@ -1,6 +1,7 @@
 {
   "id": "pihole",
   "name": "Pi-hole",
+  "color": "#96060c",
   "description": "Network-wide ad and tracker blocking DNS",
   "portParam": "PIHOLE_WEB_PORT",
   "healthPath": "/admin/",

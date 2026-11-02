@@ -60,3 +60,38 @@ export function parsePods(json: string): PodState[] {
 export async function listPods(): Promise<PodState[]> {
   return parsePods(await run(['pod', 'ps', '--format', 'json']))
 }
+
+export interface ContainerStats {
+  name: string
+  cpuPercent: number
+  memBytes: number
+}
+
+const UNITS: Record<string, number> = {
+  b: 1, kb: 1e3, mb: 1e6, gb: 1e9, tb: 1e12, kib: 1024, mib: 1024 ** 2, gib: 1024 ** 3, tib: 1024 ** 4,
+}
+
+// "12.3MB" -> bytes. podman prints decimal units; binary ones are accepted too.
+export function parseSize(text: string): number {
+  const m = /^([\d.]+)\s*([a-z]+)$/i.exec(text.trim())
+  return m ? Math.round(Number(m[1]) * (UNITS[m[2].toLowerCase()] ?? NaN)) : NaN
+}
+
+interface RawStats {
+  name: string
+  cpu_percent: string
+  mem_usage: string
+}
+
+export function parseStats(json: string): ContainerStats[] {
+  const raw = JSON.parse(json || '[]') as RawStats[] | null
+  return (raw ?? []).map((s) => ({
+    name: s.name,
+    cpuPercent: parseFloat(s.cpu_percent) || 0,
+    memBytes: parseSize(s.mem_usage.split('/')[0]) || 0,
+  }))
+}
+
+export async function stats(): Promise<ContainerStats[]> {
+  return parseStats(await run(['stats', '--no-stream', '--format', 'json']))
+}
