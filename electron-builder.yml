@@ -12,6 +12,6 @@ extraResources:
 electronVersion: 44.9.3
 electronDownload:
   version: 44.9.3+wvcus
-  mirror: https://github.com/castlabs/electron-releases/releases/download/v
+  mirror: https://github.com/castlabs/electron-releases/releases/download/
 win:
   target: nsis
