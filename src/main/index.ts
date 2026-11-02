@@ -7,6 +7,7 @@ import { loadCatalog, podName, podSample, podStatus, publicView, render, resolve
 import { IconCache } from './icons'
 import { randomAssetIds, thumbnail } from './immich'
 import * as podman from './podman'
+import { resume } from './resume'
 import { wikidataLink } from './deeplinks'
 import { ProviderStore, providerForUrl, providerUrl } from './providers'
 import { SearchProviderStore, searchUrl, type SearchProvider } from './searchProviders'
@@ -58,6 +59,8 @@ let searchProviders: SearchProviderStore
 const iconLookups = new Map<string, Promise<{ body: Buffer; type: string } | undefined>>()
 const iconFailedAt = new Map<string, number>()
 const errors = new Map<string, string>()
+// True while homeapp is starting the Podman machine after a reboot.
+let podmanStarting = false
 const history = new Map<string, StatSample[]>()
 
 // Photo thumbnails need the Immich API key, which the renderer never sees, so
@@ -93,7 +96,9 @@ async function views(): Promise<AppView[]> {
   return Promise.all(catalog.map(async (entry) => {
     const { id } = entry.manifest
     const pod = pods?.find((p) => p.name === podName(id))
-    const status = pods ? podStatus(pod, !!pod && (await healthy(entry))) : 'unavailable'
+    const status = pods
+      ? podStatus(pod, !!pod && (await healthy(entry)))
+      : podmanStarting && wanted().includes(id) ? 'starting' : 'unavailable'
     const view = publicView(entry.manifest, values(entry), errors.has(id) ? 'error' : status, history.get(id))
     view.error = errors.get(id)
     return view
@@ -329,7 +334,34 @@ async function playUrl(key: string, service: string): Promise<string | undefined
   return providerUrl(provider, title.name)
 }
 
-async function stopAllApps() {
+// Apps the user has started and not since stopped: these come back after a
+// restart.
+function wanted(): string[] {
+  return Object.entries(settings.get('autostart')).filter(([, v]) => v === 'on').map(([id]) => id)
+}
+
+function setWanted(id: string, on: boolean) {
+  settings.set('autostart', { [id]: on ? 'on' : 'off' })
+}
+
+async function resumeApps() {
+  await resume(wanted(), {
+    available: podman.available,
+    startMachine: () => podman.startMachine(),
+    listPods: podman.listPods,
+    start: (id) => act(id, podman.playKube),
+    podName,
+    onPodmanStarting: (starting) => {
+      podmanStarting = starting
+      pushStatus()
+    },
+  })
+}
+
+// `forget` is false when dev runs tidy up on close: that isn't the user
+// choosing to stop the apps.
+async function stopAllApps(forget = true) {
+  if (forget) for (const id of wanted()) setWanted(id, false)
   const pods = await podman.listPods().catch(() => [])
   const running = catalog.filter((entry) => pods.some((p) => p.name === podName(entry.manifest.id)))
   await Promise.all(running.map((entry) => act(entry.manifest.id, podman.downKube)))
@@ -337,8 +369,14 @@ async function stopAllApps() {
 
 function registerIpc() {
   ipcMain.handle('apps:list', () => views())
-  ipcMain.handle('apps:start', (_, id: string) => act(id, podman.playKube))
-  ipcMain.handle('apps:stop', (_, id: string) => act(id, podman.downKube))
+  ipcMain.handle('apps:start', (_, id: string) => {
+    setWanted(find(id).manifest.id, true)
+    return act(id, podman.playKube)
+  })
+  ipcMain.handle('apps:stop', (_, id: string) => {
+    setWanted(find(id).manifest.id, false)
+    return act(id, podman.downKube)
+  })
   ipcMain.handle('apps:open', (_, id: string) => openGuest(appUrl(find(id))))
   ipcMain.handle('apps:saveSettings', async (_, id: string, next: Record<string, string>) => {
     find(id)
@@ -476,6 +514,8 @@ app.whenReady().then(async () => {
   registerIpc()
   createWindow()
   setInterval(tick, STATUS_INTERVAL_MS)
+  // After a reboot nothing is running: start Podman and the apps left on.
+  resumeApps()
   // First start builds the catalogue; after that it refreshes weekly.
   refreshCatalog()
   setInterval(refreshCatalog, 6 * 3600 * 1000)
@@ -493,7 +533,7 @@ app.on('before-quit', (event) => {
   if (!dev || stopping) return
   event.preventDefault()
   stopping = true
-  stopAllApps().finally(() => app.quit())
+  stopAllApps(false).finally(() => app.quit())
 })
 app.on('quit', () => {
   if (dev) rmSync(app.getPath('userData'), { recursive: true, force: true })

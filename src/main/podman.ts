@@ -95,3 +95,52 @@ export function parseStats(json: string): ContainerStats[] {
 export async function stats(): Promise<ContainerStats[]> {
   return parseStats(await run(['stats', '--no-stream', '--format', 'json']))
 }
+
+export interface MachineState {
+  name: string
+  running: boolean
+  isDefault: boolean
+}
+
+interface RawMachine {
+  Name: string
+  Running?: boolean
+  Starting?: boolean
+  Default?: boolean
+}
+
+export function parseMachines(json: string): MachineState[] {
+  const raw = JSON.parse(json || '[]') as RawMachine[] | null
+  return (raw ?? []).map((m) => ({
+    // The table view marks the default with a trailing *; strip it either way.
+    name: m.Name.replace(/\*$/, ''),
+    running: !!(m.Running || m.Starting),
+    isDefault: !!m.Default,
+  }))
+}
+
+// Windows and macOS run Podman in a VM ("machine") that is down after the
+// computer restarts. Starts the default machine if there is one and it isn't
+// running, then waits for Podman to answer. False when there's no machine to
+// start (as on Linux, where Podman runs natively) or it doesn't come up.
+export async function startMachine(timeoutMs = 120_000): Promise<boolean> {
+  let machines: MachineState[]
+  try {
+    machines = parseMachines(await run(['machine', 'list', '--format', 'json']))
+  } catch {
+    return false
+  }
+  const machine = machines.find((m) => m.isDefault) ?? machines[0]
+  if (!machine) return false
+  if (!machine.running) {
+    try {
+      await run(['machine', 'start', machine.name])
+    } catch {
+      // already starting, or failed; the wait below tells which
+    }
+  }
+  for (const end = Date.now() + timeoutMs; Date.now() < end; await new Promise((r) => setTimeout(r, 2000))) {
+    if (await available()) return true
+  }
+  return false
+}
