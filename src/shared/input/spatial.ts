@@ -57,6 +57,7 @@ export interface NavHandlers {
   back(): void
   home?(): void
   menu?(): void
+  search?(): void
   pagePrev?(): void
   pageNext?(): void
 }
@@ -69,6 +70,11 @@ export interface NavHandlers {
 const FIELD = 'input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=button]):not([type=submit]), textarea, select'
 const FOCUSABLE = 'a[href], button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])'
 const LAYERS = 'dialog[open], [aria-modal="true"], [role="dialog"]'
+// A container whose children share one focus memory, like a row of tiles:
+// coming back into it lands on the child last focused there, not on whichever
+// child happens to be nearest the way in.
+const GROUP = '[data-nav-group]'
+const lastInGroup = new WeakMap<Element, HTMLElement>()
 
 type FieldEl = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 
@@ -129,7 +135,10 @@ function move(dir: Dir): boolean {
     const f = field(from)
     return !!f && locked(f)
   }
-  const next = others[i]
+  let next = others[i]
+  const group = next.closest(GROUP)
+  const remembered = group && !(from && group.contains(from)) ? lastInGroup.get(group) : undefined
+  if (remembered && others.includes(remembered)) next = remembered
   const f = field(next)
   if (f) lock(f)
   next.focus({ preventScroll: true })
@@ -178,6 +187,11 @@ export function installNav(handlers: NavHandlers): (intent: Intent) => void {
     }
   }, true)
 
+  document.addEventListener('focusin', (e) => {
+    const group = e.target instanceof HTMLElement ? e.target.closest(GROUP) : null
+    if (group) lastInGroup.set(group, e.target as HTMLElement)
+  })
+
   // Leaving a managed field re-locks it; so does committing a picker, where
   // focus stays on the field.
   document.addEventListener('focusout', (e) => {
@@ -190,7 +204,11 @@ export function installNav(handlers: NavHandlers): (intent: Intent) => void {
   })
 
   document.addEventListener('keydown', (e) => {
-    if (e.defaultPrevented || typing(e)) return
+    // A single-line box has no use for Up/Down, so they leave it rather than
+    // trapping a controller in the search field.
+    const vertical = (e.key === 'ArrowUp' || e.key === 'ArrowDown')
+      && e.target instanceof HTMLInputElement && !(e.ctrlKey || e.altKey || e.metaKey)
+    if (e.defaultPrevented || (typing(e) && !vertical)) return
     const dir = KEY_DIRS[e.key]
     if (dir) {
       if (move(dir)) e.preventDefault()
@@ -225,6 +243,7 @@ export function installNav(handlers: NavHandlers): (intent: Intent) => void {
       }
       case 'back': back(); break
       case 'menu': handlers.menu?.(); break
+      case 'search': handlers.search?.(); break
       case 'home': handlers.home?.(); break
       case 'page-prev': handlers.pagePrev?.(); break
       case 'page-next': handlers.pageNext?.(); break
