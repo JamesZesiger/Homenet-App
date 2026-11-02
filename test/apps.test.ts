@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { loadCatalog, podStatus, publicView, render, resolveValues, toMachinePath } from '../src/main/apps'
+import { loadCatalog, podSample, podStatus, publicView, render, resolveValues, toMachinePath } from '../src/main/apps'
 import type { AppManifest } from '../src/shared/types'
 
 const manifest: AppManifest = {
@@ -92,5 +92,18 @@ describe('catalog', () => {
   it('keeps homenet env names for migration', () => {
     const immich = JSON.parse(readFileSync(join(__dirname, '../catalog/immich/homeapp.json'), 'utf8')) as AppManifest
     expect(immich.params.find((p) => p.key === 'IMMICH_UPLOAD_LOCATION')?.homenetEnv).toBe('IMMICH_UPLOAD_LOCATION')
+  })
+})
+
+describe('podSample', () => {
+  it('sums the containers of one pod only', () => {
+    const all = [
+      { name: 'homeapp-immich-server', cpuPercent: 10, memBytes: 100 },
+      { name: 'homeapp-immich-database', cpuPercent: 5, memBytes: 50 },
+      { name: 'homeapp-immichx-server', cpuPercent: 99, memBytes: 999 },
+      { name: 'abc-infra', cpuPercent: 1, memBytes: 1 },
+    ]
+    expect(podSample(all, 'immich', 7)).toEqual({ at: 7, cpuPercent: 15, memBytes: 150 })
+    expect(podSample(all, 'pihole', 7)).toBeUndefined()
   })
 })

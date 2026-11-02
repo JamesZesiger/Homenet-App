@@ -5,8 +5,8 @@ import { randomBytes } from 'node:crypto'
 import { readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
-import type { AppManifest, AppStatus, AppView } from '../shared/types'
-import type { PodState } from './podman'
+import type { AppManifest, AppStatus, AppView, StatSample } from '../shared/types'
+import type { ContainerStats, PodState } from './podman'
 
 export interface CatalogApp {
   manifest: AppManifest
@@ -77,11 +77,29 @@ export function podStatus(pod: PodState | undefined, healthy: boolean): AppStatu
   return 'error'
 }
 
-export function publicView(manifest: AppManifest, values: Record<string, string>, status: AppStatus): AppView {
+// One sample for an app: its pod's containers (named <pod>-<container> by
+// kube play) summed. Undefined when none of them are running.
+export function podSample(all: ContainerStats[], id: string, at: number): StatSample | undefined {
+  const mine = all.filter((c) => c.name.startsWith(`${podName(id)}-`))
+  if (!mine.length) return undefined
+  return {
+    at,
+    cpuPercent: mine.reduce((sum, c) => sum + c.cpuPercent, 0),
+    memBytes: mine.reduce((sum, c) => sum + c.memBytes, 0),
+  }
+}
+
+export function publicView(
+  manifest: AppManifest,
+  values: Record<string, string>,
+  status: AppStatus,
+  stats: StatSample[] = [],
+): AppView {
   const secrets = new Set(manifest.params.filter((p) => p.type === 'secret').map((p) => p.key))
   return {
     manifest,
     status,
+    stats,
     values: Object.fromEntries(Object.entries(values).filter(([k]) => !secrets.has(k))),
   }
 }

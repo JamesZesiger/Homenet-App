@@ -1,6 +1,7 @@
 {
   "id": "immich",
   "name": "Immich",
+  "color": "#4250af",
   "description": "Photo and video library with phone auto-upload",
   "portParam": "IMMICH_PORT",
   "healthPath": "/api/server/ping",

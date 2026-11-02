@@ -19,6 +19,8 @@ or a mouse. It is a candidate replacement for [homenet](../homenet).
 | D-pad / left stick | Arrows | Move focus |
 | A | Enter | Activate (on a field: start typing / open picker) |
 | B | Esc | Back: un-edit field → close dialog → page back → launcher |
+| X | / | Search |
+| Start | — | Settings |
 | LB / RB | — | In an app: history back / forward |
 | LT / RT | — | Page up / down |
 | Guide | — | Return to the launcher |

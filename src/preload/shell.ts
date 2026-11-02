@@ -13,6 +13,20 @@ const api: ShellApi = {
     ipcRenderer.on('apps:status', handler)
     return () => ipcRenderer.off('apps:status', handler)
   },
+
+  providers: () => ipcRenderer.invoke('providers:list'),
+  openProvider: (id, query) => ipcRenderer.invoke('providers:open', id, query),
+  setProviderEnabled: (id, enabled) => ipcRenderer.invoke('providers:setEnabled', id, enabled),
+  addProvider: (input) => ipcRenderer.invoke('providers:add', input),
+  removeProvider: (id) => ipcRenderer.invoke('providers:remove', id),
+
+  vaultStatus: () => ipcRenderer.invoke('vault:status'),
+  saveLogin: (id, username, password) => ipcRenderer.invoke('vault:saveLogin', id, username, password),
+  clearLogin: (id) => ipcRenderer.invoke('vault:clearLogin', id),
+
+  hasImmichKey: () => ipcRenderer.invoke('immich:hasKey'),
+  setImmichKey: (key) => ipcRenderer.invoke('immich:setKey', key),
+  photos: () => ipcRenderer.invoke('immich:photos'),
 }
 
 contextBridge.exposeInMainWorld('homeapp', api)
