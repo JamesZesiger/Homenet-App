@@ -1,13 +1,13 @@
 import type { AppView } from '../../shared/types'
 import { Carousel } from './Carousel'
-import { formatBytes } from './format'
+import { formatBytes, isUp } from './format'
 import { Sparkline } from './Sparkline'
 import { StatusChip } from './StatusChip'
 
 // One stat tile per running app: CPU now (the hero figure), memory, and the
 // last few minutes of CPU as a sparkline.
 export function StatusCarousel({ apps }: { apps: AppView[] }) {
-  const running = apps.filter((a) => a.status === 'healthy' || a.status === 'running' || a.status === 'starting')
+  const running = apps.filter((a) => isUp(a.status))
   if (!running.length) {
     return (
       <div className="panel status-panel">

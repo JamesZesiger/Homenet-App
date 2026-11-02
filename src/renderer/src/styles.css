@@ -38,7 +38,7 @@ h2, h3, p { margin: 0; }
 * { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
 
 /* Frosted glass, for every surface that floats over the backdrop. */
-.panel, .drawer, .search-modal, .icon-button {
+.panel, .drawer, .search-modal, .title-detail, .icon-button {
   background: var(--glass);
   border: 1px solid var(--glass-edge);
   backdrop-filter: var(--blur);
@@ -52,7 +52,7 @@ h2, h3, p { margin: 0; }
 }
 
 /* ---- Controls ---------------------------------------------------------- */
-button, input {
+button, input, select {
   font: inherit;
   color: inherit;
 }
@@ -70,8 +70,6 @@ button[type='submit'], button.primary { background: var(--accent); color: #0a122
 button[type='submit']:hover:not(:disabled), button.primary:hover:not(:disabled) { background: #c4d9ff; }
 button:disabled { opacity: 0.4; cursor: default; }
 input, select {
-  font: inherit;
-  color: inherit;
   width: 100%;
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid transparent;
@@ -130,7 +128,8 @@ input[data-nav-lock='1'] { caret-color: transparent; }
   min-height: 0;
   border-radius: var(--radius);
 }
-.panel-title {
+/* Small-caps section labels. */
+.panel-title, .drawer h3, .results h3 {
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -214,27 +213,21 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 
 /* Small icon badge, as used in settings lists. */
 .tile-icon {
-  position: absolute;
-  top: 1.1rem;
-  left: 1.2rem;
-  font-size: 1.6rem;
+  flex: 0 0 auto;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   display: grid;
   place-items: center;
 }
 .favicon {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 12px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 1px 4px rgba(2, 6, 14, 0.35);
   overflow: hidden;
 }
 .favicon img { width: 78%; height: 78%; object-fit: contain; }
 .monogram {
-  width: 2.6rem;
-  height: 2.6rem;
-  border-radius: 12px;
-  font-size: 1.2rem;
   font-weight: 800;
   background: linear-gradient(150deg, rgba(169, 199, 255, 0.35), rgba(169, 199, 255, 0.1));
   border: 1px solid var(--glass-edge);
@@ -371,14 +364,7 @@ input[data-nav-lock='1'] { caret-color: transparent; }
   animation: slide-in 260ms var(--ease);
 }
 .drawer h2 { font-size: 1.7rem; letter-spacing: -0.02em; }
-.drawer h3 {
-  margin-top: 1.25rem;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+.drawer h3 { margin-top: 1.25rem; }
 .setting-group {
   border-radius: 20px;
   padding: 1.1rem 1.2rem;
@@ -451,14 +437,7 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 .search-input { background: transparent; border: none; padding: 0.85rem 0; font-size: 1.1rem; color: #e8eef8; }
 .search-input:focus { outline: none; background: transparent; }
 .results { display: flex; flex-direction: column; gap: 1.75rem; }
-.results h3 {
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 0.75rem;
-}
+.results h3 { margin-bottom: 0.75rem; }
 .result-row { display: flex; gap: 1rem; flex-wrap: wrap; }
 .result-card {
   display: grid;
@@ -512,9 +491,6 @@ input[data-nav-lock='1'] { caret-color: transparent; }
   overflow-y: auto;
   border-radius: var(--radius);
   background: rgba(14, 24, 42, 0.86);
-  border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-shine), var(--shadow);
-  backdrop-filter: var(--blur);
   animation: pop-in 220ms var(--ease);
 }
 .title-detail .backdrop {
@@ -552,8 +528,9 @@ input[data-nav-lock='1'] { caret-color: transparent; }
   width: 100%;
   height: 100%;
   overflow-y: auto;
-  background: rgba(10, 18, 32, 0.72);
-  backdrop-filter: var(--blur);
+  /* Covers the whole screen, so blurring what's beneath would cost GPU time
+     for nothing anyone sees: a near-opaque fill looks the same. */
+  background: rgba(10, 18, 32, 0.96);
   animation: fade-in 200ms ease-out;
   scroll-padding: 6rem 0 2rem;
 }
@@ -573,7 +550,6 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr)); gap: 1.25rem; }
 
 .row-title { display: flex; align-items: center; gap: 0.9rem; min-width: 0; }
-.row-title .tile-icon { position: static; flex: 0 0 auto; width: 2.4rem; height: 2.4rem; font-size: 1.1rem; }
 .list { display: grid; border-radius: 20px; overflow: hidden; }
 .list-row {
   display: flex;

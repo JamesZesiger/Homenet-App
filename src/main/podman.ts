@@ -2,17 +2,22 @@
 // it behaves the same on Linux and on Windows, where podman.exe forwards to the
 // WSL2 podman machine, so there is no unix-socket/named-pipe client to keep.
 import { execFile } from 'node:child_process'
+import { setTimeout as sleep } from 'node:timers/promises'
 
 export interface PodState {
   name: string
   status: string
-  // Container name -> status, infra container excluded.
-  containers: Record<string, string>
 }
 
-function run(args: string[], input?: string): Promise<string> {
+// Degraded: some of the pod's containers are running.
+export const podUp = (pod?: PodState) => pod?.status === 'Running' || pod?.status === 'Degraded'
+
+// Most commands answer in moments; one that hangs (a stuck Podman machine)
+// is killed rather than left waiting forever. 0 means no limit, for kube play,
+// which may be pulling gigabytes of images.
+function run(args: string[], input?: string, timeout = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
-    const child = execFile('podman', args, { maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+    const child = execFile('podman', args, { maxBuffer: 16 * 1024 * 1024, timeout }, (err, stdout, stderr) => {
       if (err) reject(new Error(stderr.trim() || err.message))
       else resolve(stdout)
     })
@@ -32,29 +37,17 @@ export async function available(): Promise<boolean> {
 // Creates (or recreates) the pod and its named volumes from Kubernetes YAML.
 // Volumes survive --replace and down, so app data is never deleted here.
 export async function playKube(yaml: string): Promise<void> {
-  await run(['kube', 'play', '--replace', '-'], yaml)
+  await run(['kube', 'play', '--replace', '-'], yaml, 0)
 }
 
 export async function downKube(yaml: string): Promise<void> {
-  await run(['kube', 'down', '-'], yaml)
+  await run(['kube', 'down', '-'], yaml, 120_000)
 }
 
-interface RawPod {
-  Name: string
-  Status: string
-  InfraId?: string
-  Containers?: { Id: string; Names: string; Status: string }[]
-}
 
 export function parsePods(json: string): PodState[] {
-  const raw = JSON.parse(json || '[]') as RawPod[] | null
-  return (raw ?? []).map((pod) => ({
-    name: pod.Name,
-    status: pod.Status,
-    containers: Object.fromEntries(
-      (pod.Containers ?? []).filter((c) => c.Id !== pod.InfraId).map((c) => [c.Names, c.Status]),
-    ),
-  }))
+  const raw = JSON.parse(json || '[]') as { Name: string; Status: string }[] | null
+  return (raw ?? []).map((pod) => ({ name: pod.Name, status: pod.Status }))
 }
 
 export async function listPods(): Promise<PodState[]> {
@@ -94,4 +87,55 @@ export function parseStats(json: string): ContainerStats[] {
 
 export async function stats(): Promise<ContainerStats[]> {
   return parseStats(await run(['stats', '--no-stream', '--format', 'json']))
+}
+
+interface MachineState {
+  name: string
+  running: boolean
+  isDefault: boolean
+}
+
+interface RawMachine {
+  Name: string
+  Running?: boolean
+  Starting?: boolean
+  Default?: boolean
+}
+
+export function parseMachines(json: string): MachineState[] {
+  const raw = JSON.parse(json || '[]') as RawMachine[] | null
+  return (raw ?? []).map((m) => ({
+    // The table view marks the default with a trailing *; strip it either way.
+    name: m.Name.replace(/\*$/, ''),
+    running: !!(m.Running || m.Starting),
+    isDefault: !!m.Default,
+  }))
+}
+
+// Windows and macOS run Podman in a VM ("machine") that is down after the
+// computer restarts. Starts the default machine if there is one and it isn't
+// running, then waits for Podman to answer. False when there's no machine to
+// start (as on Linux, where Podman runs natively) or it doesn't come up.
+const MACHINE_TIMEOUT_MS = 120_000
+
+export async function startMachine(): Promise<boolean> {
+  let machines: MachineState[]
+  try {
+    machines = parseMachines(await run(['machine', 'list', '--format', 'json']))
+  } catch {
+    return false
+  }
+  const machine = machines.find((m) => m.isDefault) ?? machines[0]
+  if (!machine) return false
+  if (!machine.running) {
+    try {
+      await run(['machine', 'start', machine.name], undefined, MACHINE_TIMEOUT_MS)
+    } catch {
+      // already starting, or failed; the wait below tells which
+    }
+  }
+  for (const end = Date.now() + MACHINE_TIMEOUT_MS; Date.now() < end; await sleep(2000)) {
+    if (await available()) return true
+  }
+  return false
 }

@@ -4,6 +4,10 @@ Electron (castlabs build) launcher hosting Podman apps; see README.md.
 
 ## Rules
 
+- Build only what is needed; the best code is the smallest code. Reuse what
+  is already in this codebase, and never recreate what the standard library,
+  the platform (Electron, Chromium, Podman) or an installed dependency already
+  provides.
 - Work on a feature branch; never commit to `main`. Merge only when asked.
 - Never commit settings, secrets or `.env` files.
 - `npm run check` (typecheck, lint, tests) must pass before committing.

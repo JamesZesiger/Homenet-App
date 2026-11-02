@@ -31,8 +31,17 @@ function distance(a: string, b: string): number {
   return d[a.length][b.length]
 }
 
+// Three-letter chunks of the query. A typo leaves most of them intact, so a
+// name sharing under 30% of them can't be a near miss and skips the costly
+// comparison (sharing just "the" doesn't count).
+function trigrams(query: string): string[] {
+  const grams = new Set<string>()
+  for (let i = 0; i + 3 <= query.length; i++) if (!query.slice(i, i + 3).includes(' ')) grams.add(query.slice(i, i + 3))
+  return [...grams]
+}
+
 // 0 when the name doesn't match at all. Both arguments must be normalized.
-export function matchScore(query: string, name: string): number {
+export function matchScore(query: string, name: string, grams = trigrams(query)): number {
   if (!query || !name) return 0
   if (name === query) return 100
   if (name.startsWith(query)) return 90
@@ -44,7 +53,7 @@ export function matchScore(query: string, name: string): number {
   if (name.includes(query)) return 60
   // Typos: compare against the start of the name and each word run of the
   // same length, so "strnger things" still finds "Stranger Things".
-  if (query.length < 4) return 0
+  if (query.length < 4 || grams.filter((g) => name.includes(g)).length < Math.max(1, grams.length * 0.3)) return 0
   let best = Infinity
   const starts = [0, ...[...name.matchAll(/ /g)].map((m) => (m.index ?? 0) + 1)]
   for (const s of starts) {
@@ -56,16 +65,18 @@ export function matchScore(query: string, name: string): number {
   return similarity >= 0.75 ? Math.round(50 * similarity) : 0
 }
 
-export interface Rankable {
+interface Rankable {
   normalizedName: string
   voteCount: number
 }
 
 export function rank<T extends Rankable>(query: string, items: T[], limit: number): T[] {
-  const q = normalize(query)
+  // Long queries only cost more; no title name needs more than this.
+  const q = normalize(query).slice(0, 60)
   if (!q) return []
+  const grams = trigrams(q)
   return items
-    .map((item) => ({ item, score: matchScore(q, item.normalizedName) }))
+    .map((item) => ({ item, score: matchScore(q, item.normalizedName, grams) }))
     .filter((r) => r.score > 0)
     .map((r) => ({ ...r, score: r.score + Math.min(4, Math.log10(1 + r.item.voteCount)) }))
     .sort((a, b) => b.score - a.score)

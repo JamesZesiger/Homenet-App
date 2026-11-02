@@ -69,3 +69,21 @@ describe('TitleStore', () => {
     expect(store.search('shared')).toHaveLength(2)
   })
 })
+
+describe('refresh failure', () => {
+  it('stays failed while other in-flight requests land, so a retry can run', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'titles-'))
+    const store = new TitleStore(join(dir, 'titles.json'), join(dir, 'links.json'))
+    let calls = 0
+    const tmdb = {
+      discover: async () => {
+        if (++calls === 1) throw new Error('boom')
+        await new Promise((r) => setTimeout(r, 20))
+        return { items: [], totalPages: 1 }
+      },
+    } as unknown as Tmdb
+    await store.refresh(tmdb, () => {})
+    await new Promise((r) => setTimeout(r, 60))
+    expect(store.status.state).toBe('error')
+  })
+})

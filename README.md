@@ -73,6 +73,9 @@ service's search for it otherwise.
 - App state: podman named volumes `homeapp-<id>-<volume>`. Stopping an app
   removes its pod, never its volumes. Pods keep running after homeapp closes;
   stop them from Settings › Advanced.
+- After a restart, homeapp starts the Podman machine if needed (Windows) and
+  brings back every app that was left running: started and not since
+  stopped. Stopping an app, or Stop all, means it stays off.
 - Catalogue: `titles.json` and `title-links.json` beside the settings.
 - Media: host folders set per app (photo library, audiobooks).
 

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { loadCatalog, podSample, podStatus, publicView, render, resolveValues, toMachinePath } from '../src/main/apps'
+import { checkSettings, loadCatalog, podSample, podStatus, publicView, render, resolveValues, toMachinePath } from '../src/main/apps'
 import type { AppManifest } from '../src/shared/types'
 
 const manifest: AppManifest = {
@@ -62,7 +62,7 @@ describe('render', () => {
 
 describe('podStatus', () => {
   it('maps pod state and health', () => {
-    const pod = (status: string) => ({ name: 'p', status, containers: {} })
+    const pod = (status: string) => ({ name: 'p', status })
     expect(podStatus(undefined, false)).toBe('stopped')
     expect(podStatus(pod('Running'), true)).toBe('healthy')
     expect(podStatus(pod('Running'), false)).toBe('running')
@@ -105,5 +105,17 @@ describe('podSample', () => {
     ]
     expect(podSample(all, 'immich', 7)).toEqual({ at: 7, cpuPercent: 15, memBytes: 150 })
     expect(podSample(all, 'pihole', 7)).toBeUndefined()
+  })
+})
+
+describe('checkSettings', () => {
+  it('keeps only the app\'s own non-secret settings', () => {
+    expect(checkSettings(manifest, { NAME: 'n', PASS: 'leak', TZ: 'x', PORT: '8081' })).toEqual({ NAME: 'n', PORT: '8081' })
+  })
+
+  it('rejects ports that are not 1-65535', () => {
+    for (const port of ['2283@evil.example', '0', '70000', '']) {
+      expect(() => checkSettings(manifest, { PORT: port })).toThrow(/1 to 65535/)
+    }
   })
 })

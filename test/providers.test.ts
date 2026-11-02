@@ -72,3 +72,12 @@ describe('ProviderStore', () => {
     expect(new ProviderStore(file).find('peacock')).toBeUndefined()
   })
 })
+
+describe('custom provider ports', () => {
+  it('fills a login only on the port the provider was added with', () => {
+    const local = toProvider({ name: 'Jellyfin', home: 'https://media.home:8443/', color: '#000000' }, [])
+    expect(local.domains).toEqual(['media.home:8443'])
+    expect(providerForUrl('https://media.home:8443/login', [local])?.id).toBe('jellyfin')
+    expect(providerForUrl('https://media.home:9443/login', [local])).toBeUndefined()
+  })
+})
