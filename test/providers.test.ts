@@ -56,13 +56,19 @@ describe('toProvider', () => {
 })
 
 describe('ProviderStore', () => {
+  it('gives a custom provider named like a built-in one its own id', () => {
+    const store = new ProviderStore(join(mkdtempSync(join(tmpdir(), 'providers-')), 'providers.json'))
+    expect(store.add({ name: 'Max', home: 'https://www.max.com/', color: '#000000' }).id).toBe('max-2')
+    expect(store.find('max')?.custom).toBeFalsy()
+  })
+
   it('saves custom providers and only removes those', () => {
     const file = join(mkdtempSync(join(tmpdir(), 'providers-')), 'providers.json')
     const store = new ProviderStore(file)
-    store.add({ name: 'Max', home: 'https://www.max.com/', color: '#000000' })
-    expect(new ProviderStore(file).find('max')?.custom).toBe(true)
+    store.add({ name: 'Peacock', home: 'https://www.peacocktv.com/', color: '#000000' })
+    expect(new ProviderStore(file).find('peacock')?.custom).toBe(true)
     expect(store.remove('netflix')).toBe(false)
-    expect(store.remove('max')).toBe(true)
-    expect(new ProviderStore(file).find('max')).toBeUndefined()
+    expect(store.remove('peacock')).toBe(true)
+    expect(new ProviderStore(file).find('peacock')).toBeUndefined()
   })
 })

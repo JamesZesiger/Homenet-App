@@ -1,6 +1,6 @@
 // Launcher preload: the only bridge between the launcher UI and main.
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppView, ShellApi } from '../shared/types'
+import type { AppView, CatalogStatus, ShellApi } from '../shared/types'
 
 const api: ShellApi = {
   list: () => ipcRenderer.invoke('apps:list'),
@@ -23,6 +23,26 @@ const api: ShellApi = {
   vaultStatus: () => ipcRenderer.invoke('vault:status'),
   saveLogin: (id, username, password) => ipcRenderer.invoke('vault:saveLogin', id, username, password),
   clearLogin: (id) => ipcRenderer.invoke('vault:clearLogin', id),
+
+  searchProviders: () => ipcRenderer.invoke('searchProviders:list'),
+  addSearchProvider: (input) => ipcRenderer.invoke('searchProviders:add', input),
+  removeSearchProvider: (id) => ipcRenderer.invoke('searchProviders:remove', id),
+  setSearchProviderEnabled: (id, enabled) => ipcRenderer.invoke('searchProviders:setEnabled', id, enabled),
+  openSearchProvider: (id, query) => ipcRenderer.invoke('searchProviders:open', id, query),
+
+  searchTitles: (query) => ipcRenderer.invoke('titles:search', query),
+  title: (key) => ipcRenderer.invoke('titles:get', key),
+  play: (key, service) => ipcRenderer.invoke('titles:play', key, service),
+  catalogStatus: () => ipcRenderer.invoke('catalog:status'),
+  refreshCatalog: () => ipcRenderer.invoke('catalog:refresh'),
+  onCatalogStatus: (listener) => {
+    const handler = (_: unknown, status: CatalogStatus) => listener(status)
+    ipcRenderer.on('catalog:status', handler)
+    return () => ipcRenderer.off('catalog:status', handler)
+  },
+  hasTmdbKey: () => ipcRenderer.invoke('tmdb:hasKey'),
+  setTmdbKey: (key) => ipcRenderer.invoke('tmdb:setKey', key),
+  stopAllApps: () => ipcRenderer.invoke('apps:stopAll'),
 
   hasImmichKey: () => ipcRenderer.invoke('immich:hasKey'),
   setImmichKey: (key) => ipcRenderer.invoke('immich:setKey', key),

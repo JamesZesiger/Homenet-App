@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import type { ProviderInput, ProviderView } from '../../shared/types'
 import { Page } from './Page'
+import { SearchProvidersSection } from './SearchProvidersSection'
 import { TileIcon } from './TileIcon'
 
 const EMPTY: ProviderInput = { name: '', home: '', search: '', color: '#2a78d6' }
@@ -44,6 +45,7 @@ export function ProvidersPage({ providers, onChanged, onBack }: {
         ))}
       </div>
       <AddProvider onAdded={onChanged} />
+      <SearchProvidersSection />
     </Page>
   )
 }
@@ -72,7 +74,7 @@ function AddProvider({ onAdded }: { onAdded: () => void }) {
         Search address (optional)
         <input value={input.search} onChange={set('search')} placeholder="https://play.max.com/search?q={q}" />
       </label>
-      <p className="hint">Search for anything on the site, copy the address, and put {'{q}'} where your search words were.</p>
+      <p className="hint">Gives the provider a Search on button. Search the site, copy the address, and put {'{q}'} where your words were.</p>
       <label className="field color-field">Tile colour<input type="color" value={input.color} onChange={set('color')} /></label>
       {error && <p className="error" role="alert">{error}</p>}
       <div className="actions">

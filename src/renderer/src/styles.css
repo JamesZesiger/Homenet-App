@@ -66,10 +66,12 @@ button {
   transition: background 150ms, transform 150ms var(--ease), box-shadow 150ms;
 }
 button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.18); }
-button[type='submit'] { background: var(--accent); color: #0a1220; }
-button[type='submit']:hover:not(:disabled) { background: #c4d9ff; }
+button[type='submit'], button.primary { background: var(--accent); color: #0a1220; }
+button[type='submit']:hover:not(:disabled), button.primary:hover:not(:disabled) { background: #c4d9ff; }
 button:disabled { opacity: 0.4; cursor: default; }
-input {
+input, select {
+  font: inherit;
+  color: inherit;
   width: 100%;
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid transparent;
@@ -77,8 +79,9 @@ input {
   padding: 0.55rem 0.9rem;
   transition: border-color 150ms, background 150ms;
 }
+select option { background: #14203a; }
 input::placeholder { color: var(--muted); }
-input:focus { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
+input:focus, select:focus { background: rgba(255, 255, 255, 0.1); border-color: var(--accent); }
 input[data-nav-lock='1'] { caret-color: transparent; }
 
 /* Focus is the cursor: unmistakable from across the room. */
@@ -468,6 +471,66 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 .result-card strong { font-size: 1rem; }
 .result-card span { font-size: 0.72rem; font-weight: 500; color: var(--muted); }
 .search-modal > .empty-note, .results > .empty-note { margin-top: 0.5rem; }
+
+/* ---- Search results -------------------------------------------------- */
+.search-top {
+  position: sticky;
+  top: -1.75rem;
+  z-index: 1;
+  display: grid;
+  gap: 0.8rem;
+  margin: -1.75rem -2rem 0;
+  padding: 1.75rem 2rem 1rem;
+  background: linear-gradient(rgba(14, 24, 42, 0.96) 80%, rgba(14, 24, 42, 0));
+}
+.search-on { display: flex; align-items: center; gap: 0.6rem; overflow-x: auto; scrollbar-width: none; padding: 0.3rem 0.2rem; }
+.search-on .hint { flex: 0 0 auto; }
+.pill { flex: 0 0 auto; border-radius: 999px; padding: 0.35rem 1rem; font-size: 0.8rem; border: 1px solid var(--glass-edge); }
+.poster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 1.1rem; padding: 0.3rem; }
+.poster {
+  aspect-ratio: 2 / 3;
+  padding: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  box-shadow: 0 8px 20px rgba(2, 6, 14, 0.35);
+  transition: transform 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.poster img { width: 100%; height: 100%; object-fit: cover; }
+.poster-name { padding: 0.8rem; font-size: 0.85rem; text-align: center; }
+.poster:focus { outline: none; transform: scale(1.06); box-shadow: 0 0 0 3px #0a1220, 0 0 0 6px var(--accent), 0 0 30px 2px var(--accent-glow); }
+.catalog-note { text-align: center; }
+
+.title-detail {
+  position: relative;
+  margin: auto;
+  width: min(64rem, 86%);
+  max-height: 86vh;
+  overflow-y: auto;
+  border-radius: var(--radius);
+  background: rgba(14, 24, 42, 0.86);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shine), var(--shadow);
+  backdrop-filter: var(--blur);
+  animation: pop-in 220ms var(--ease);
+}
+.title-detail .backdrop {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 6;
+  object-fit: cover;
+  mask-image: linear-gradient(#000 40%, transparent);
+}
+.detail-body { display: flex; gap: 2rem; padding: 0 2.2rem 2.2rem; margin-top: -5rem; position: relative; }
+.title-detail:not(:has(.backdrop)) .detail-body { margin-top: 0; padding-top: 2.2rem; }
+.detail-poster { width: 11rem; aspect-ratio: 2 / 3; object-fit: cover; border-radius: 16px; flex: 0 0 auto; box-shadow: 0 16px 40px rgba(2, 6, 14, 0.6); }
+.detail-text { display: grid; gap: 0.6rem; align-content: end; }
+.detail-text h2 { font-size: 2rem; letter-spacing: -0.02em; }
+.overview { color: var(--ink-2); font-size: 0.92rem; max-width: 42rem; }
+.section-title { margin-top: 1rem; font-size: 1.3rem; }
 
 /* ---- Settings pages ---------------------------------------------------- */
 .nav-list { display: grid; gap: 0.6rem; }

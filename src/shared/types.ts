@@ -62,6 +62,50 @@ export interface ProviderInput {
   color: string
 }
 
+// How a search provider wants the words in its address: %20, + or a-slug.
+export type QueryFormat = 'encoded' | 'plus' | 'dash'
+
+export interface SearchProviderInput {
+  name: string
+  url: string
+  format: QueryFormat
+}
+
+export interface SearchProviderView {
+  id: string
+  name: string
+  url: string
+  format: QueryFormat
+  enabled: boolean
+  // Added by the user; the rest come from streaming providers' search pages.
+  custom: boolean
+}
+
+export interface CatalogStatus {
+  state: 'idle' | 'loading' | 'ready' | 'error' | 'no-key'
+  titles: number
+  updatedAt?: number
+  // While loading: discover pages fetched, out of those known so far.
+  done?: number
+  total?: number
+  error?: string
+}
+
+export interface TitleHit {
+  key: string
+  name: string
+  type: 'movie' | 'tv'
+  year?: number
+  poster?: string
+  // Provider ids of the services streaming it.
+  services: string[]
+}
+
+export interface TitleDetail extends TitleHit {
+  overview: string
+  backdrop?: string
+}
+
 export interface VaultStatus {
   // False when the OS has no keychain to protect the vault (e.g. Linux without
   // a secret service), so contents are only obfuscated.
@@ -98,6 +142,22 @@ export interface ShellApi {
   vaultStatus(): Promise<VaultStatus>
   saveLogin(providerId: string, username: string, password: string): Promise<void>
   clearLogin(providerId: string): Promise<void>
+
+  searchProviders(): Promise<SearchProviderView[]>
+  addSearchProvider(input: SearchProviderInput): Promise<{ error?: string }>
+  removeSearchProvider(id: string): Promise<void>
+  setSearchProviderEnabled(id: string, enabled: boolean): Promise<void>
+  openSearchProvider(id: string, query: string): Promise<void>
+
+  searchTitles(query: string): Promise<TitleHit[]>
+  title(key: string): Promise<TitleDetail | undefined>
+  play(key: string, service: string): Promise<void>
+  catalogStatus(): Promise<CatalogStatus>
+  refreshCatalog(): Promise<void>
+  onCatalogStatus(listener: (status: CatalogStatus) => void): () => void
+  hasTmdbKey(): Promise<boolean>
+  setTmdbKey(key: string): Promise<void>
+  stopAllApps(): Promise<void>
 
   hasImmichKey(): Promise<boolean>
   setImmichKey(key: string): Promise<void>
