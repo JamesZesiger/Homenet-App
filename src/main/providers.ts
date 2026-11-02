@@ -47,6 +47,25 @@ export const PROVIDERS: Provider[] = [
     domains: ['amazon.com', 'primevideo.com'],
   },
   {
+    id: 'crunchyroll', name: 'Crunchyroll', color: '#f47521',
+    home: 'https://www.crunchyroll.com/',
+    search: 'https://www.crunchyroll.com/search?q={q}',
+    domains: ['crunchyroll.com'],
+  },
+  {
+    // TMDB and Wikidata still say Max; the service is HBO Max again.
+    id: 'max', name: 'HBO Max', color: '#002be7',
+    home: 'https://play.hbomax.com/',
+    search: 'https://play.hbomax.com/search?q={q}',
+    domains: ['hbomax.com', 'max.com'],
+  },
+  {
+    id: 'paramount', name: 'Paramount+', color: '#0064ff',
+    home: 'https://www.paramountplus.com/',
+    search: 'https://www.paramountplus.com/search/?q={q}',
+    domains: ['paramountplus.com'],
+  },
+  {
     id: 'youtube', name: 'YouTube', color: '#ff0000',
     home: 'https://www.youtube.com/',
     search: 'https://www.youtube.com/results?search_query={q}',

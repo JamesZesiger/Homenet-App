@@ -4,6 +4,7 @@ import { Clock } from './Clock'
 import { SearchIcon, SettingsIcon } from './Icons'
 import { PhotoCarousel } from './PhotoCarousel'
 import { SearchModal } from './SearchModal'
+import { AdvancedPage } from './AdvancedPage'
 import { PasswordsPage } from './PasswordsPage'
 import { ProvidersPage } from './ProvidersPage'
 import { SettingsDrawer, type SettingsPage } from './SettingsDrawer'
@@ -140,6 +141,9 @@ export function App() {
       )}
       {layer === 'settings' && page === 'passwords' && (
         <PasswordsPage providers={providers} onChanged={loadProviders} onBack={() => setPage(null)} />
+      )}
+      {layer === 'settings' && page === 'advanced' && (
+        <AdvancedPage apps={apps} onBack={() => setPage(null)} />
       )}
       {layer === 'settings' && page === 'providers' && (
         <ProvidersPage providers={providers} onChanged={loadProviders} onBack={() => setPage(null)} />

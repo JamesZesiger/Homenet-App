@@ -4,7 +4,7 @@ import { Dialog } from './Dialog'
 import { ChevronRight } from './Icons'
 import { StatusChip } from './StatusChip'
 
-export type SettingsPage = 'passwords' | 'providers'
+export type SettingsPage = 'passwords' | 'providers' | 'advanced'
 
 export function SettingsDrawer({ apps, providers, onOpenPage, onImmichKeyChanged, onClose }: {
   apps: AppView[]
@@ -36,6 +36,13 @@ export function SettingsDrawer({ apps, providers, onOpenPage, onImmichKeyChanged
 
       <h3>Apps</h3>
       {apps.map((a) => <AppSettings key={a.manifest.id} app={a} />)}
+
+      <div className="nav-list">
+        <button className="nav-item" onClick={() => onOpenPage('advanced')}>
+          <span><strong>Advanced</strong><span className="row-sub">Catalogue, running apps</span></span>
+          <ChevronRight />
+        </button>
+      </div>
     </Dialog>
   )
 }
