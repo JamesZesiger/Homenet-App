@@ -1,0 +1,14 @@
+{
+  "id": "pihole",
+  "name": "Pi-hole",
+  "description": "Network-wide ad and tracker blocking DNS",
+  "portParam": "PIHOLE_WEB_PORT",
+  "healthPath": "/admin/",
+  "params": [
+    { "key": "PIHOLE_VERSION", "label": "Version", "type": "string", "default": "latest", "homenetEnv": "PIHOLE_VERSION" },
+    { "key": "PIHOLE_WEB_PORT", "label": "Admin port", "type": "port", "default": "8081", "homenetEnv": "PIHOLE_WEB_PORT" },
+    { "key": "PIHOLE_DNS_BIND", "label": "DNS listen address", "type": "string", "default": "0.0.0.0", "homenetEnv": "PIHOLE_DNS_BIND" },
+    { "key": "PIHOLE_DNS_PORT", "label": "DNS port", "type": "port", "default": "53" },
+    { "key": "PIHOLE_UPSTREAMS", "label": "Upstream DNS servers", "type": "string", "default": "1.1.1.1;1.0.0.1", "homenetEnv": "PIHOLE_UPSTREAMS" }
+  ]
+}

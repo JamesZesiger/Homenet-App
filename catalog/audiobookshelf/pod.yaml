@@ -1,0 +1,31 @@
+# Audiobookshelf, translated from homenet's services/audiobookshelf/docker-compose.yml.
+# Media folders are writable: web uploads create each book's folder there.
+# /config holds the SQLite database (users, progress); /metadata is rebuildable.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: homeapp-audiobookshelf
+spec:
+  restartPolicy: Always
+  containers:
+    - name: server
+      image: 'ghcr.io/advplyr/audiobookshelf:${ABS_VERSION}'
+      ports:
+        - containerPort: 80
+          hostPort: ${ABS_PORT}
+      env:
+        - { name: TZ, value: '${TZ}' }
+      volumeMounts:
+        - { name: audiobooks, mountPath: /audiobooks }
+        - { name: podcasts, mountPath: /podcasts }
+        - { name: config, mountPath: /config }
+        - { name: metadata, mountPath: /metadata }
+  volumes:
+    - name: audiobooks
+      hostPath: { path: '${ABS_AUDIOBOOKS_PATH}', type: DirectoryOrCreate }
+    - name: podcasts
+      hostPath: { path: '${ABS_PODCASTS_PATH}', type: DirectoryOrCreate }
+    - name: config
+      persistentVolumeClaim: { claimName: homeapp-audiobookshelf-config }
+    - name: metadata
+      persistentVolumeClaim: { claimName: homeapp-audiobookshelf-metadata }

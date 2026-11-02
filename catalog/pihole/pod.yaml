@@ -1,0 +1,28 @@
+# Pi-hole, translated from homenet's services/pihole/docker-compose.yml.
+# Rootless podman cannot bind port 53 unless net.ipv4.ip_unprivileged_port_start
+# is lowered; see the README. No web password is set: Pi-hole generates one on
+# first start and `pihole setpassword` replaces it.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: homeapp-pihole
+spec:
+  restartPolicy: Always
+  containers:
+    - name: server
+      image: 'docker.io/pihole/pihole:${PIHOLE_VERSION}'
+      ports:
+        - { containerPort: 53, hostPort: ${PIHOLE_DNS_PORT}, hostIP: '${PIHOLE_DNS_BIND}', protocol: TCP }
+        - { containerPort: 53, hostPort: ${PIHOLE_DNS_PORT}, hostIP: '${PIHOLE_DNS_BIND}', protocol: UDP }
+        - { containerPort: 80, hostPort: ${PIHOLE_WEB_PORT} }
+      env:
+        - { name: TZ, value: '${TZ}' }
+        # Published ports make every query arrive from the gateway, so the
+        # default "local" listening mode would refuse them all.
+        - { name: FTLCONF_dns_listeningMode, value: all }
+        - { name: FTLCONF_dns_upstreams, value: '${PIHOLE_UPSTREAMS}' }
+      volumeMounts:
+        - { name: etc, mountPath: /etc/pihole }
+  volumes:
+    - name: etc
+      persistentVolumeClaim: { claimName: homeapp-pihole-etc }

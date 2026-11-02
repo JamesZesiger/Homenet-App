@@ -1,0 +1,13 @@
+{
+  "id": "audiobookshelf",
+  "name": "Audiobookshelf",
+  "description": "Audiobooks and podcasts with progress sync",
+  "portParam": "ABS_PORT",
+  "healthPath": "/healthcheck",
+  "params": [
+    { "key": "ABS_VERSION", "label": "Version", "type": "string", "default": "latest", "homenetEnv": "ABS_VERSION" },
+    { "key": "ABS_PORT", "label": "Port", "type": "port", "default": "13378", "homenetEnv": "ABS_PORT" },
+    { "key": "ABS_AUDIOBOOKS_PATH", "label": "Audiobooks folder", "type": "path", "default": "~/homeapp/audiobooks", "homenetEnv": "ABS_AUDIOBOOKS_PATH" },
+    { "key": "ABS_PODCASTS_PATH", "label": "Podcasts folder", "type": "path", "default": "~/homeapp/podcasts", "homenetEnv": "ABS_PODCASTS_PATH" }
+  ]
+}

@@ -1,0 +1,38 @@
+/* Sized for a TV across the room. The UI is expected to be replaced. */
+:root {
+  color-scheme: dark;
+  font: 24px/1.4 system-ui, sans-serif;
+  background: #0b0d12;
+  color: #e8eaf0;
+}
+body { margin: 0; }
+main { padding: 2rem 3rem; }
+h1 { margin: 0 0 1.5rem; font-size: 2rem; }
+h2 { margin: 0 0 0.25rem; }
+p { margin: 0 0 0.75rem; color: #a7adbd; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr)); gap: 1.5rem; }
+.card { background: #161a23; border-radius: 1rem; padding: 1.5rem; }
+.actions { display: flex; gap: 0.75rem; margin-top: 1rem; flex-wrap: wrap; }
+button, input {
+  font: inherit;
+  color: inherit;
+  background: #232937;
+  border: 2px solid transparent;
+  border-radius: 0.6rem;
+  padding: 0.5rem 1.1rem;
+}
+button:disabled { opacity: 0.4; }
+/* Focus is the cursor: it must be unmistakable from the couch. */
+:focus-visible, button:focus, input:focus {
+  outline: 4px solid #5aa9ff;
+  outline-offset: 3px;
+}
+.chip { display: inline-block; padding: 0.1rem 0.7rem; border-radius: 1rem; font-size: 0.8rem; background: #2a3040; }
+.chip.healthy { background: #1f5f3a; }
+.chip.starting, .chip.running { background: #6a5410; }
+.chip.error, .chip.unavailable { background: #6b2020; }
+.error { color: #ff9b9b; font-size: 0.8rem; word-break: break-word; }
+.notice { background: #3a2a10; color: #ffd27a; padding: 1rem; border-radius: 0.6rem; }
+.settings { display: grid; gap: 1rem; max-width: 40rem; }
+.settings label { display: grid; gap: 0.3rem; }
+input[data-nav-lock="1"] { caret-color: transparent; }

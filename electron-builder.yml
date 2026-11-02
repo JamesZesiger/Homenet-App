@@ -1,0 +1,17 @@
+appId: com.homeapp.app
+productName: homeapp
+directories:
+  output: dist
+files:
+  - out/**
+extraResources:
+  - from: catalog
+    to: catalog
+# castlabs Electron (Widevine) instead of upstream: electron-builder cannot read
+# the version from the git dependency, so pin it here alongside package.json.
+electronVersion: 44.9.3
+electronDownload:
+  version: 44.9.3+wvcus
+  mirror: https://github.com/castlabs/electron-releases/releases/download/v
+win:
+  target: nsis

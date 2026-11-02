@@ -1,0 +1,15 @@
+{
+  "id": "immich",
+  "name": "Immich",
+  "description": "Photo and video library with phone auto-upload",
+  "portParam": "IMMICH_PORT",
+  "healthPath": "/api/server/ping",
+  "params": [
+    { "key": "IMMICH_VERSION", "label": "Version", "type": "string", "default": "release", "homenetEnv": "IMMICH_VERSION" },
+    { "key": "IMMICH_PORT", "label": "Port", "type": "port", "default": "2283", "homenetEnv": "IMMICH_PORT" },
+    { "key": "IMMICH_UPLOAD_LOCATION", "label": "Photo library folder", "type": "path", "default": "~/homeapp/immich-library", "homenetEnv": "IMMICH_UPLOAD_LOCATION" },
+    { "key": "IMMICH_DB_USERNAME", "label": "Database user", "type": "string", "default": "immich", "homenetEnv": "IMMICH_DB_USERNAME" },
+    { "key": "IMMICH_DB_PASSWORD", "label": "Database password", "type": "secret", "homenetEnv": "IMMICH_DB_PASSWORD" },
+    { "key": "IMMICH_DB_NAME", "label": "Database name", "type": "string", "default": "immich", "homenetEnv": "IMMICH_DB_NAME" }
+  ]
+}
