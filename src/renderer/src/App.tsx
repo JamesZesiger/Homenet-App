@@ -68,16 +68,13 @@ export function App() {
   // Activating an app opens it when it's up, and starts it when it isn't.
   const activateApp = (app: AppView) => {
     const { id } = app.manifest
+    if (busy === id) return
     if (app.status === 'healthy') {
       window.homeapp.open(id)
     } else if (app.status === 'stopped' || app.status === 'error') {
       setBusy(id)
       window.homeapp.start(id).finally(() => setBusy(null))
     }
-  }
-  const openApp = (id: string) => {
-    const app = apps.find((a) => a.manifest.id === id)
-    if (app) activateApp(app)
   }
 
   const podmanMissing = apps.length > 0 && apps.every((a) => a.status === 'unavailable')
@@ -125,7 +122,7 @@ export function App() {
       </div>
 
       {layer === 'search' && (
-        <SearchModal apps={apps} providers={providers} onOpenApp={openApp} onClose={() => setLayer(null)} />
+        <SearchModal apps={apps} providers={providers} onOpenApp={activateApp} onClose={() => setLayer(null)} />
       )}
       {layer === 'settings' && (
         <SettingsDrawer

@@ -49,7 +49,6 @@ export interface ProviderView {
   // A login is saved in the vault (the credentials themselves never leave main).
   hasLogin: boolean
   savedUsername?: string
-  canSearch: boolean
   home: string
   // Added by the user (removable), rather than built in (hide only).
   custom: boolean

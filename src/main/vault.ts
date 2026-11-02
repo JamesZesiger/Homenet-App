@@ -1,8 +1,7 @@
 // Encrypted secret store: streaming logins and API keys. Values are encrypted
 // with Electron's safeStorage (DPAPI on Windows, the keychain/secret service
 // elsewhere) and only ever decrypted in the main process.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { readJson, writeAtomic } from './files'
 
 export interface Cipher {
   encrypt(plain: string): Buffer
@@ -18,11 +17,7 @@ export class Vault {
   private data: Record<string, string>
 
   constructor(private readonly file: string, private readonly cipher: Cipher) {
-    try {
-      this.data = JSON.parse(readFileSync(file, 'utf8')) as Record<string, string>
-    } catch {
-      this.data = {}
-    }
+    this.data = readJson<Record<string, string>>(file, {})
   }
 
   get(key: string): string | undefined {
@@ -50,7 +45,6 @@ export class Vault {
   }
 
   private save() {
-    mkdirSync(dirname(this.file), { recursive: true })
-    writeFileSync(this.file, JSON.stringify(this.data, null, 2), { mode: 0o600 })
+    writeAtomic(this.file, JSON.stringify(this.data, null, 2), 0o600)
   }
 }

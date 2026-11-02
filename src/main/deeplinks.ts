@@ -12,7 +12,7 @@ const USER_AGENT = 'homeapp/0.1 (self-hosted home media launcher)'
 
 // Per service: the Wikidata property holding its id, and the URL that id
 // goes into (each property's formatter URL, P1630). Paramount+ has none.
-export const WIKIDATA: Record<string, Partial<Record<MediaType, { prop: string; url: string }>>> = {
+const WIKIDATA: Record<string, Partial<Record<MediaType, { prop: string; url: string }>>> = {
   netflix: {
     movie: { prop: 'P1874', url: 'https://www.netflix.com/title/{id}' },
     tv: { prop: 'P1874', url: 'https://www.netflix.com/title/{id}' },
@@ -47,6 +47,8 @@ export async function wikidataLink(fetcher: Fetch, imdbId: string, service: stri
   const query = `SELECT ?sid WHERE { ?item wdt:P345 "${imdbId}" . ?item wdt:${entry.prop} ?sid . } LIMIT 1`
   const res = await fetcher(`${SPARQL}?format=json&query=${encodeURIComponent(query)}`, {
     headers: { 'User-Agent': USER_AGENT, Accept: 'application/sparql-results+json' },
+    // Play waits on this; past a few seconds the search page is the better answer.
+    signal: AbortSignal.timeout(5000),
   })
   if (!res.ok) return undefined
   const body = (await res.json()) as { results?: { bindings?: { sid?: { value?: string } }[] } }

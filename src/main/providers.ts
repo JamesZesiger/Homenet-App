@@ -1,9 +1,8 @@
 // Streaming services shown as launcher tiles. They play in-app through the
 // castlabs Widevine build, so DRM'd sites open in a hosted view like any app.
 // Built-in ones ship here; users add their own through the Providers page.
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
 import type { ProviderInput } from '../shared/types'
+import { CustomList } from './files'
 
 export interface Provider {
   id: string
@@ -13,7 +12,8 @@ export interface Provider {
   home: string
   // Search page for a query, with {q} replaced by the encoded query.
   search?: string
-  // Sites (and their subdomains) where this provider's saved login may be filled.
+  // Hosts (and their subdomains) where this provider's saved login may be
+  // filled; a port, when given, must match too.
   domains: string[]
   // Page to find the tile icon on, when home only declares a small one.
   iconPage?: string
@@ -81,60 +81,64 @@ export function providerUrl(provider: Provider, query?: string): string {
 // The provider whose login belongs on this page, if any. Only https pages on
 // the provider's own domains qualify.
 export function providerForUrl(url: string, providers: Provider[] = PROVIDERS): Provider | undefined {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return undefined
-  }
-  if (parsed.protocol !== 'https:') return undefined
-  const host = parsed.hostname
+  const parsed = URL.parse(url)
+  if (parsed?.protocol !== 'https:') return undefined
+  // host includes a non-default port, so https://localhost:8443 doesn't
+  // also match https://localhost:9443.
+  const host = parsed.host
   return providers.find((p) => p.domains.some((d) => host === d || host.endsWith(`.${d}`)))
 }
 
-function httpsUrl(value: string, label: string): URL {
-  let url: URL
-  try {
-    url = new URL(value.trim())
-  } catch {
-    throw new Error(`${label} must be a full web address, like https://www.example.com`)
-  }
+// Checks shared by the forms that add providers and search providers.
+export function checkName(value: string): string {
+  const name = value.trim()
+  if (!name || name.length > 40) throw new Error('Name must be 1 to 40 characters')
+  return name
+}
+
+// An https address from a form; a search address must have {q} where the
+// search words go (URL encodes the braces, so put them back first).
+export function webAddress(value: string, label: string, search = false): string {
+  const url = URL.parse(value.trim())
+  if (!url) throw new Error(`${label} must be a full web address, like https://www.example.com`)
   if (url.protocol !== 'https:') throw new Error(`${label} must start with https://`)
-  return url
+  const href = url.href.replace(/%7Bq%7D/gi, '{q}')
+  if (search && !href.includes('{q}')) throw new Error(`${label} must contain {q} where the search words go`)
+  return href
+}
+
+// "Pokémon: The Movie" -> pokemon-the-movie
+export function slug(text: string): string {
+  return text.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
+export function uniqueId(base: string, taken: string[]): string {
+  let id = base
+  for (let n = 2; taken.includes(id); n++) id = `${base}-${n}`
+  return id
 }
 
 // A provider from the Providers page form, checked and filled in. Its login
 // may only be filled on the website's own domain (www. dropped) and below.
 export function toProvider(input: ProviderInput, taken: string[]): Provider {
-  const name = input.name.trim()
-  if (!name || name.length > 40) throw new Error('Name must be 1 to 40 characters')
-  const home = httpsUrl(input.home, 'Website')
-  let search: string | undefined
-  if (input.search?.trim()) {
-    search = httpsUrl(input.search, 'Search address').href.replace(/%7Bq%7D/gi, '{q}')
-    if (!search.includes('{q}')) throw new Error('Search address must contain {q} where the search words go')
-  }
+  const name = checkName(input.name)
+  const home = webAddress(input.home, 'Website')
+  const search = input.search?.trim() ? webAddress(input.search, 'Search address', true) : undefined
   const color = /^#[0-9a-f]{6}$/i.test(input.color) ? input.color.toLowerCase() : '#52514e'
-  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'provider'
-  let id = base
-  for (let n = 2; taken.includes(id); n++) id = `${base}-${n}`
-  return { id, name, color, home: home.href, search, domains: [home.hostname.replace(/^www\./, '')], custom: true }
+  const id = uniqueId(slug(name) || 'provider', taken)
+  return { id, name, color, home, search, domains: [new URL(home).host.replace(/^www\./, '')], custom: true }
 }
 
-// Built-in providers plus the user's own, kept as JSON beside the settings.
+// Built-in providers plus the user's own.
 export class ProviderStore {
-  private custom: Provider[]
+  private custom: CustomList<Provider>
 
-  constructor(private readonly file: string) {
-    try {
-      this.custom = (JSON.parse(readFileSync(file, 'utf8')) as Provider[]).map((p) => ({ ...p, custom: true }))
-    } catch {
-      this.custom = []
-    }
+  constructor(file: string) {
+    this.custom = new CustomList(file)
   }
 
   all(): Provider[] {
-    return [...PROVIDERS, ...this.custom]
+    return [...PROVIDERS, ...this.custom.items]
   }
 
   find(id: string): Provider | undefined {
@@ -142,23 +146,11 @@ export class ProviderStore {
   }
 
   add(input: ProviderInput): Provider {
-    const provider = toProvider(input, this.all().map((p) => p.id))
-    this.custom.push(provider)
-    this.save()
-    return provider
+    return this.custom.add(toProvider(input, this.all().map((p) => p.id)))
   }
 
   // Only the user's own providers can be removed; built-ins can be hidden.
   remove(id: string): boolean {
-    const before = this.custom.length
-    this.custom = this.custom.filter((p) => p.id !== id)
-    if (this.custom.length === before) return false
-    this.save()
-    return true
-  }
-
-  private save() {
-    mkdirSync(dirname(this.file), { recursive: true })
-    writeFileSync(this.file, JSON.stringify(this.custom, null, 2))
+    return this.custom.remove(id)
   }
 }

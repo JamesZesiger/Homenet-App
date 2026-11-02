@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppView, CatalogStatus, ProviderView, SearchProviderView, TitleHit } from '../../shared/types'
 import { Dialog } from './Dialog'
+import { percent } from './format'
 import { SearchIcon } from './Icons'
 import { TitleDetailDialog } from './TitleDetail'
 
@@ -12,7 +13,7 @@ const DEBOUNCE_MS = 150
 export function SearchModal({ apps, providers, onOpenApp, onClose }: {
   apps: AppView[]
   providers: ProviderView[]
-  onOpenApp: (id: string) => void
+  onOpenApp: (app: AppView) => void
   onClose: () => void
 }) {
   const [query, setQuery] = useState('')
@@ -87,7 +88,7 @@ export function SearchModal({ apps, providers, onOpenApp, onClose }: {
                   </button>
                 ))}
                 {appHits.map((a) => (
-                  <button key={a.manifest.id} className="result-card" onClick={() => go(() => onOpenApp(a.manifest.id))}>
+                  <button key={a.manifest.id} className="result-card" onClick={() => go(() => onOpenApp(a))}>
                     <strong>{a.manifest.name}</strong>
                     <span>{a.manifest.description}</span>
                   </button>
@@ -136,8 +137,7 @@ function CatalogNote({ status }: { status?: CatalogStatus }) {
     return <p className="hint catalog-note">Add a TMDB API key in Settings › Advanced to search movies and shows.</p>
   }
   if (status.state === 'loading') {
-    const pct = status.total ? Math.round((100 * (status.done ?? 0)) / status.total) : 0
-    return <p className="hint catalog-note">Loading the movie and show catalogue… {pct}%</p>
+    return <p className="hint catalog-note">Loading the movie and show catalogue… {percent(status)}%</p>
   }
   if (status.state === 'error') return <p className="hint catalog-note">Catalogue update failed: {status.error}</p>
   return null

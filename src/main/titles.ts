@@ -1,13 +1,13 @@
 // The movie and show catalogue behind search: every popular US title the
 // streaming services carry, fetched from TMDB on first start and weekly after,
 // merged across services and kept on disk.
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
-import { dirname } from 'node:path'
+import { setTimeout as sleep } from 'node:timers/promises'
 import type { CatalogStatus, TitleDetail, TitleHit } from '../shared/types'
+import { readJson, writeAtomic } from './files'
 import { normalize, rank } from './rank'
 import { IMAGE_BASE, SERVICES, type DiscoverItem, type MediaType, type Tmdb } from './tmdb'
 
-export const REFRESH_AFTER_MS = 7 * 24 * 3600 * 1000
+const REFRESH_AFTER_MS = 7 * 24 * 3600 * 1000
 const CONCURRENCY = 4
 const FILE_VERSION = 1
 
@@ -70,7 +70,7 @@ export async function fetchCatalog(tmdb: Tmdb, onProgress: (done: number, total:
     while (!failed && (queue.length || active)) {
       const job = queue.shift()
       if (!job) {
-        await new Promise((r) => setTimeout(r, 25))
+        await sleep(25)
         continue
       }
       active++
@@ -81,7 +81,9 @@ export async function fetchCatalog(tmdb: Tmdb, onProgress: (done: number, total:
           for (let page = 2; page <= totalPages; page++) queue.push({ ...job, page })
           total += Math.max(0, totalPages - 1)
         }
-        onProgress(++done, total)
+        // A failed refresh is over; requests still landing mustn't report it
+        // as loading again.
+        if (!failed) onProgress(++done, total)
       } catch (err) {
         failed = true
         throw err
@@ -102,17 +104,10 @@ export class TitleStore {
   status: CatalogStatus = { state: 'idle', titles: 0 }
 
   constructor(private readonly file: string, private readonly linksFile: string) {
-    try {
-      const saved = JSON.parse(readFileSync(file, 'utf8')) as { version: number; updatedAt: number; titles: Title[] }
-      if (saved.version === FILE_VERSION) this.replace(saved.titles, saved.updatedAt)
-    } catch {
-      // first start: nothing saved yet
-    }
-    try {
-      this.links = JSON.parse(readFileSync(linksFile, 'utf8')) as Record<string, string>
-    } catch {
-      this.links = {}
-    }
+    // Nothing saved yet on first start.
+    const saved = readJson<{ version?: number; updatedAt: number; titles: Title[] }>(file, { updatedAt: 0, titles: [] })
+    if (saved.version === FILE_VERSION) this.replace(saved.titles, saved.updatedAt)
+    this.links = readJson<Record<string, string>>(linksFile, {})
   }
 
   private replace(titles: Title[], updatedAt: number) {
@@ -177,10 +172,4 @@ export class TitleStore {
 
 function hit(t: Title): TitleHit {
   return { key: t.key, name: t.name, type: t.type, year: t.year, poster: image('w342', t.poster), services: t.services }
-}
-
-function writeAtomic(file: string, data: string) {
-  mkdirSync(dirname(file), { recursive: true })
-  writeFileSync(`${file}.tmp`, data)
-  renameSync(`${file}.tmp`, file)
 }

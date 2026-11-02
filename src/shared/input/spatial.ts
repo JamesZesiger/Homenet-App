@@ -52,7 +52,7 @@ export function pickNext(from: Rect | null, dir: Dir, candidates: Rect[], viewpo
   return next
 }
 
-export interface NavHandlers {
+interface NavHandlers {
   // Nothing left to close on the page: leave it (history back or launcher).
   back(): void
   home?(): void

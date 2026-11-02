@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { AppView, CatalogStatus } from '../../shared/types'
+import { errorText, isUp, percent } from './format'
 import { Page } from './Page'
 import { StatusChip } from './StatusChip'
 
@@ -26,10 +27,10 @@ export function AdvancedPage({ apps, onBack }: { apps: AppView[]; onBack: () => 
       setHasKey(!!value)
       setStatus(await window.homeapp.catalogStatus())
     } catch (err) {
-      setKeyError(`Couldn't save the key: ${(err as Error).message.replace(/^Error invoking remote method '[^']+': (Error: )?/, '')}`)
+      setKeyError(`Couldn't save the key: ${errorText(err)}`)
     }
   }
-  const running = apps.filter((a) => a.status === 'healthy' || a.status === 'running' || a.status === 'starting')
+  const running = apps.filter((a) => isUp(a.status))
 
   return (
     <Page title="Advanced" onBack={onBack}>
@@ -82,8 +83,7 @@ function describe(status?: CatalogStatus): string {
   switch (status.state) {
     case 'no-key': return 'Needs a TMDB API key to download the catalogue.'
     case 'loading': {
-      const pct = status.total ? Math.round((100 * (status.done ?? 0)) / status.total) : 0
-      return `Downloading… ${pct}% (${status.done ?? 0} of ${status.total ?? '?'} pages)`
+      return `Downloading… ${percent(status)}% (${status.done ?? 0} of ${status.total ?? '?'} pages)`
     }
     case 'error': return `Last update failed: ${status.error}. ${status.titles.toLocaleString()} titles kept${when}.`
     case 'ready': return `${status.titles.toLocaleString()} movies and shows${when}.`
