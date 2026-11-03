@@ -59,7 +59,11 @@ jobs:
       - uses: actions/upload-artifact@v7
         with:
           name: homeapp-windows
-          path: dist/*.exe
+          # latest.yml and the blockmap are what installed copies update from.
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+            dist/latest.yml
           if-no-files-found: error
 
   # A v* tag ships: attach the installer to a GitHub Release for that tag.
@@ -74,7 +78,7 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           name: homeapp-windows
-      - run: gh release create "$GITHUB_REF_NAME" ./*.exe --generate-notes
+      - run: gh release create "$GITHUB_REF_NAME" ./*.exe ./*.blockmap latest.yml --generate-notes
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}

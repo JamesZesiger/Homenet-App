@@ -1,7 +1,8 @@
 import { mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { app, BrowserWindow, components, ipcMain, net, protocol, safeStorage, session, WebContentsView } from 'electron'
+import { app, BrowserWindow, components, ipcMain, net, powerMonitor, protocol, safeStorage, session, WebContentsView } from 'electron'
+import { autoUpdater } from 'electron-updater'
 import type { AppView, CatalogStatus, PhotoResult, ProviderInput, ProviderView, SearchProviderInput, SearchProviderView, StatSample, VaultStatus } from '../shared/types'
 import { checkSettings, loadCatalog, podName, podSample, podStatus, publicView, render, resolveValues, type CatalogApp } from './apps'
 import { CustomList } from './files'
@@ -32,6 +33,9 @@ const ICON_KEY = /^(provider|app)-([a-z0-9-]+)$/
 // After a failed icon lookup (say the app is stopped), wait before retrying.
 const ICON_RETRY_MS = 60_000
 const TMDB_KEY = 'tmdb:apiKey'
+// A downloaded update waits until nothing is open and no one has touched the
+// box for this long, so it never cuts off a show.
+const UPDATE_IDLE_S = 10 * 60
 
 // A dev run (anything unpackaged) starts from a scratch profile every time and
 // stops its pods when it closes; only the title catalogue is kept between
@@ -508,6 +512,19 @@ function registerIpc() {
   ipcMain.on('guest:home', closeGuest)
 }
 
+// New versions come from the GitHub Releases that CI publishes for v* tags.
+function autoUpdate() {
+  autoUpdater.on('error', (err) => console.error('Update failed:', err.message))
+  autoUpdater.once('update-downloaded', () => {
+    setInterval(() => {
+      if (!guest && powerMonitor.getSystemIdleTime() >= UPDATE_IDLE_S) autoUpdater.quitAndInstall(true, true)
+    }, 60_000)
+  })
+  const check = () => autoUpdater.checkForUpdates().catch(() => {})
+  check()
+  setInterval(check, 6 * 3600 * 1000)
+}
+
 function createWindow() {
   win = new BrowserWindow({
     width: 1600,
@@ -559,6 +576,7 @@ app.whenReady().then(async () => {
   // First start builds the catalogue; after that it refreshes weekly.
   refreshCatalog()
   setInterval(refreshCatalog, 6 * 3600 * 1000)
+  if (!dev) autoUpdate()
   // Widevine installs in the background; the launcher doesn't wait for it,
   // only DRM playback does.
   components.whenReady().catch((err: Error) => console.error('Widevine unavailable:', err.message))
