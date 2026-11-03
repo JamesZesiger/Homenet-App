@@ -33,7 +33,13 @@ async function autofill() {
   if (pass) fill(pass, login.password)
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
+  // A TV page (YouTube's) has its own remote navigation: the controller
+  // presses its keys, and the keyboard is left alone.
+  if (await ipcRenderer.invoke('guest:tv')) {
+    startGamepad((intent) => ipcRenderer.send(intent === 'home' ? 'guest:home' : 'guest:key', intent))
+    return
+  }
   const dispatch = installNav({
     back: () => ipcRenderer.send('guest:back'),
     home: () => ipcRenderer.send('guest:home'),
