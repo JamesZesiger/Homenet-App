@@ -12,7 +12,7 @@ export type Intent =
 const DIRECTIONS = new Set<Intent>(['up', 'down', 'left', 'right'])
 
 // Standard-mapping button indices. Y (3) is deliberately unassigned.
-export const BUTTON_INTENTS: Record<number, Intent> = {
+const BUTTON_INTENTS: Record<number, Intent> = {
   0: 'activate', 1: 'back', 2: 'search',
   4: 'page-prev', 5: 'page-next', 6: 'page-up', 7: 'page-down',
   9: 'menu',

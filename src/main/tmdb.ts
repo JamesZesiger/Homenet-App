@@ -1,6 +1,7 @@
 // TMDB client for the title catalogue: which movies and shows each streaming
 // service carries in the US. Availability comes only from TMDB (JustWatch
 // data); streaming sites are never scraped.
+import { setTimeout as sleep } from 'node:timers/promises'
 
 type Fetch = (url: string, init?: RequestInit) => Promise<Response>
 
@@ -8,6 +9,9 @@ const BASE = 'https://api.themoviedb.org/3'
 export const IMAGE_BASE = 'https://image.tmdb.org/t/p'
 // TMDB refuses discover pages past 500.
 const MAX_PAGES = 500
+const TIMEOUT_MS = 10_000
+// Longest wait honoured when TMDB asks to slow down.
+const MAX_RETRY_WAIT_S = 30
 
 export type MediaType = 'movie' | 'tv'
 
@@ -28,7 +32,7 @@ export const SERVICES: { id: string; tmdbProviders: number[]; anyLanguage?: bool
 ]
 
 // "Popular only": titles with at least this many TMDB votes.
-export const MIN_VOTES = 50
+const MIN_VOTES = 50
 
 export interface DiscoverItem {
   id: number
@@ -58,10 +62,13 @@ export class Tmdb {
     const bearer = this.key.length > 40
     if (!bearer) url.searchParams.set('api_key', this.key)
     for (let attempt = 0; ; attempt++) {
-      const res = await this.fetcher(url.href, bearer ? { headers: { Authorization: `Bearer ${this.key}` } } : undefined)
+      const res = await this.fetcher(url.href, {
+        headers: bearer ? { Authorization: `Bearer ${this.key}` } : undefined,
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      })
       if (res.status === 429 && attempt < 5) {
-        const wait = Number(res.headers.get('retry-after')) || 2 ** attempt
-        await new Promise((r) => setTimeout(r, wait * 1000))
+        const wait = Math.min(Number(res.headers.get('retry-after')) || 2 ** attempt, MAX_RETRY_WAIT_S)
+        await sleep(wait * 1000)
         continue
       }
       if (res.status === 401) throw new Error('TMDB rejected the API key')
@@ -71,8 +78,8 @@ export class Tmdb {
   }
 
   async discover({ service, type, page }: DiscoverQuery): Promise<{ items: DiscoverItem[]; totalPages: number }> {
-    const def = SERVICES.find((s) => s.id === service)
-    if (!def) throw new Error(`Unknown service ${service}`)
+    // Jobs only ever come from SERVICES.
+    const def = SERVICES.find((s) => s.id === service)!
     const params: Record<string, string> = {
       with_watch_providers: def.tmdbProviders.join('|'),
       watch_region: 'US',

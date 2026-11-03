@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 import type { AppManifest, AppStatus, AppView, StatSample } from '../shared/types'
-import type { ContainerStats, PodState } from './podman'
+import { podUp, type ContainerStats, type PodState } from './podman'
 
 export interface CatalogApp {
   manifest: AppManifest
@@ -68,10 +68,28 @@ export function render(template: string, manifest: AppManifest, values: Record<s
   })
 }
 
+// Settings from the settings form, before they're saved: only the app's own
+// non-secret settings, and ports that are real ports (a value like
+// "2283@elsewhere" would otherwise end up in the URLs homeapp calls).
+export function checkSettings(manifest: AppManifest, next: Record<string, string>): Record<string, string> {
+  const params = new Map(manifest.params.filter((p) => p.type !== 'secret').map((p) => [p.key, p]))
+  const clean: Record<string, string> = {}
+  for (const [key, value] of Object.entries(next)) {
+    const param = params.get(key)
+    if (!param) continue
+    const port = Number(value)
+    if (param.type === 'port' && !(/^\d{1,5}$/.test(value) && port >= 1 && port <= 65535)) {
+      throw new Error(`${param.label} must be a number from 1 to 65535`)
+    }
+    clean[key] = String(value)
+  }
+  return clean
+}
+
 export function podStatus(pod: PodState | undefined, healthy: boolean): AppStatus {
   if (!pod) return 'stopped'
   if (healthy) return 'healthy'
-  if (pod.status === 'Running' || pod.status === 'Degraded') return 'running'
+  if (podUp(pod)) return 'running'
   if (pod.status === 'Created') return 'starting'
   if (pod.status === 'Exited' || pod.status === 'Stopped') return 'stopped'
   return 'error'

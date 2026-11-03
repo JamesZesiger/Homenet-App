@@ -1,6 +1,15 @@
 // Launcher preload: the only bridge between the launcher UI and main.
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AppView, CatalogStatus, ShellApi } from '../shared/types'
+import type { ShellApi } from '../shared/types'
+
+// Pushed updates from main: subscribe, and get back the unsubscribe.
+const subscribe = <T>(channel: string) => (listener: (value: T) => void) => {
+  const handler = (_: unknown, value: T) => listener(value)
+  ipcRenderer.on(channel, handler)
+  return () => {
+    ipcRenderer.off(channel, handler)
+  }
+}
 
 const api: ShellApi = {
   list: () => ipcRenderer.invoke('apps:list'),
@@ -8,11 +17,7 @@ const api: ShellApi = {
   stop: (id) => ipcRenderer.invoke('apps:stop', id),
   open: (id) => ipcRenderer.invoke('apps:open', id),
   saveSettings: (id, values) => ipcRenderer.invoke('apps:saveSettings', id, values),
-  onStatus: (listener) => {
-    const handler = (_: unknown, apps: AppView[]) => listener(apps)
-    ipcRenderer.on('apps:status', handler)
-    return () => ipcRenderer.off('apps:status', handler)
-  },
+  onStatus: subscribe('apps:status'),
 
   providers: () => ipcRenderer.invoke('providers:list'),
   openProvider: (id, query) => ipcRenderer.invoke('providers:open', id, query),
@@ -35,11 +40,7 @@ const api: ShellApi = {
   play: (key, service) => ipcRenderer.invoke('titles:play', key, service),
   catalogStatus: () => ipcRenderer.invoke('catalog:status'),
   refreshCatalog: () => ipcRenderer.invoke('catalog:refresh'),
-  onCatalogStatus: (listener) => {
-    const handler = (_: unknown, status: CatalogStatus) => listener(status)
-    ipcRenderer.on('catalog:status', handler)
-    return () => ipcRenderer.off('catalog:status', handler)
-  },
+  onCatalogStatus: subscribe('catalog:status'),
   hasTmdbKey: () => ipcRenderer.invoke('tmdb:hasKey'),
   setTmdbKey: (key) => ipcRenderer.invoke('tmdb:setKey', key),
   stopAllApps: () => ipcRenderer.invoke('apps:stopAll'),

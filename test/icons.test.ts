@@ -72,3 +72,9 @@ describe('manifest icons', () => {
     expect(manifestIcons(null, 'https://a.test/m.json')).toEqual([])
   })
 })
+
+describe('icon fetch bounds', () => {
+  it('never follows non-web icon addresses', () => {
+    expect(iconCandidates('<link rel="icon" href="file:///etc/passwd">', 'https://a.test/')).toEqual(['https://a.test/favicon.ico'])
+  })
+})

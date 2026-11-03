@@ -1,7 +1,7 @@
 // Read-only access to Immich for the launcher's photo carousel, using an API
 // key the user creates in Immich (Account settings → API keys, asset.read).
 
-export interface ImmichAsset {
+interface ImmichAsset {
   id: string
   type: string
 }

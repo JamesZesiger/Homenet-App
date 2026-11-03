@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { AppView, ProviderView } from '../../shared/types'
 import { Dialog } from './Dialog'
+import { errorText, isUp } from './format'
 import { ChevronRight } from './Icons'
 import { StatusChip } from './StatusChip'
 
@@ -42,6 +43,10 @@ export function SettingsDrawer({ apps, providers, onOpenPage, onImmichKeyChanged
           <span><strong>Advanced</strong><span className="row-sub">Catalogue, running apps</span></span>
           <ChevronRight />
         </button>
+        {/* Closing the only window quits; apps keep running. */}
+        <button className="nav-item" onClick={() => window.close()}>
+          <span><strong>Exit</strong><span className="row-sub">Close homeapp; apps keep running</span></span>
+        </button>
       </div>
     </Dialog>
   )
@@ -77,11 +82,15 @@ function AppSettings({ app }: { app: AppView }) {
   const fields = app.manifest.params.filter((p) => p.type !== 'secret')
   const [values, setValues] = useState(() => Object.fromEntries(fields.map((p) => [p.key, app.values[p.key] ?? ''])))
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string>()
   const { id } = app.manifest
-  const up = app.status === 'healthy' || app.status === 'running' || app.status === 'starting'
+  const up = isUp(app.status)
   const run = (action: Promise<void>) => {
     setBusy(true)
-    action.finally(() => setBusy(false))
+    setError(undefined)
+    action
+      .catch((err) => setError(errorText(err)))
+      .finally(() => setBusy(false))
   }
   return (
     <form className="setting-group" onSubmit={(e) => { e.preventDefault(); run(window.homeapp.saveSettings(id, values)) }}>
@@ -89,7 +98,7 @@ function AppSettings({ app }: { app: AppView }) {
         <strong>{app.manifest.name}</strong>
         <StatusChip status={app.status} busy={busy} />
       </div>
-      {app.error && <p className="error">{app.error}</p>}
+      {(error ?? app.error) && <p className="error" role="alert">{error ?? app.error}</p>}
       {fields.map((p) => (
         <label key={p.key} className="field">
           {p.label}
@@ -102,7 +111,7 @@ function AppSettings({ app }: { app: AppView }) {
           ? <button type="button" disabled={busy} onClick={() => run(window.homeapp.stop(id))}>Stop</button>
           : <button type="button" disabled={busy || app.status === 'unavailable'} onClick={() => run(window.homeapp.start(id))}>Start</button>}
       </div>
-      <p className="hint">Saved changes apply the next time the app starts.</p>
+      <p className="hint">Saving restarts the app if it’s running.</p>
     </form>
   )
 }

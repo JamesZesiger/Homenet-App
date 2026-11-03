@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { podName } from '../src/main/apps'
 import { parseMachines, type PodState } from '../src/main/podman'
 import { appsToResume, resume, type ResumeDeps } from '../src/main/resume'
 
-const pod = (name: string, status: string): PodState => ({ name, status, containers: {} })
-const podName = (id: string) => `homeapp-${id}`
+const pod = (name: string, status: string): PodState => ({ name, status })
 
 describe('parseMachines', () => {
   it('reads podman machine list JSON', () => {

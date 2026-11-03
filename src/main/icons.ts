@@ -1,10 +1,16 @@
 // Tile icons: the site's or app's own favicon, found from its page's <link>
 // tags, fetched once and cached on disk so tiles have them offline and while
 // an app is stopped.
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { writeAtomic } from './files'
 
 type Fetch = (url: string) => Promise<Response>
+
+// Bounds on what a site (custom providers included) can make homeapp fetch.
+const MAX_CANDIDATES = 6
+const MAX_BYTES = 2_000_000
+const tooBig = (res: Response) => Number(res.headers.get('content-length')) > MAX_BYTES
 
 export interface Candidate {
   href: string
@@ -57,7 +63,8 @@ export function manifestIcons(manifest: unknown, url: string): Candidate[] {
 export function iconCandidates(html: string, pageUrl: string, extra: Candidate[] = []): string[] {
   const urls = [...linkIcons(html, pageUrl), ...extra].sort((a, b) => b.score - a.score).map((c) => c.href)
   urls.push(new URL('/favicon.ico', pageUrl).href)
-  return [...new Set(urls)]
+  // Only web addresses: a page could point an icon at file: or data:.
+  return [...new Set(urls)].filter((u) => /^https?:/.test(u))
 }
 
 export class IconCache {
@@ -81,28 +88,27 @@ export class IconCache {
   // Looks the icon up from `pageUrl` and caches the first one that loads.
   async fetch(key: string, pageUrl: string): Promise<{ body: Buffer; type: string } | undefined> {
     const page = await this.fetcher(pageUrl)
-    const html = page.ok ? await page.text() : ''
+    const html = page.ok && !tooBig(page) ? await page.text() : ''
     const base = page.url || pageUrl
     let extra: Candidate[] = []
     const manifest = manifestUrl(html, base)
     if (manifest) {
       try {
         const res = await this.fetcher(manifest)
-        if (res.ok) extra = manifestIcons(await res.json(), res.url || manifest)
+        if (res.ok && !tooBig(res)) extra = manifestIcons(await res.json(), res.url || manifest)
       } catch {
         // no manifest icons; the page's own links still count
       }
     }
-    for (const url of iconCandidates(html, base, extra)) {
+    for (const url of iconCandidates(html, base, extra).slice(0, MAX_CANDIDATES)) {
       try {
         const res = await this.fetcher(url)
         const type = res.headers.get('content-type')?.split(';')[0] ?? ''
-        if (!res.ok || !type.startsWith('image/')) continue
+        if (!res.ok || !type.startsWith('image/') || tooBig(res)) continue
         const body = Buffer.from(await res.arrayBuffer())
-        if (!body.length) continue
-        mkdirSync(this.dir, { recursive: true })
-        writeFileSync(this.file(key), body)
-        writeFileSync(`${this.file(key)}.type`, type)
+        if (!body.length || body.length > MAX_BYTES) continue
+        writeAtomic(this.file(key), body)
+        writeAtomic(`${this.file(key)}.type`, type)
         return { body, type }
       } catch {
         // try the next candidate

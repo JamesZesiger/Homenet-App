@@ -3,7 +3,7 @@
 // needed and restarts every app the user left running. Which apps those are
 // is the user's intent (started and not since stopped), not a snapshot of
 // what happened to be up.
-import type { PodState } from './podman'
+import { podUp, type PodState } from './podman'
 
 export interface ResumeDeps {
   available(): Promise<boolean>
@@ -17,8 +17,7 @@ export interface ResumeDeps {
 // Apps the user wants running whose pod isn't up.
 export function appsToResume(wanted: string[], pods: PodState[], podName: (id: string) => string): string[] {
   return wanted.filter((id) => {
-    const pod = pods.find((p) => p.name === podName(id))
-    return !pod || !(pod.status === 'Running' || pod.status === 'Degraded')
+    return !podUp(pods.find((p) => p.name === podName(id)))
   })
 }
 
