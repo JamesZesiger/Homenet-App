@@ -15,3 +15,13 @@ electronDownload:
   mirror: https://github.com/castlabs/electron-releases/releases/download/
 win:
   target: nsis
+nsis:
+  # No spaces: GitHub renames them on upload, and latest.yml must name the
+  # installer exactly.
+  artifactName: ${productName}-Setup-${version}.${ext}
+# Where the installed app looks for updates (electron-updater); CI publishes
+# the installer, latest.yml and the blockmap to this repo's Releases.
+publish:
+  provider: github
+  owner: JamesZesiger
+  repo: Homenet-App
