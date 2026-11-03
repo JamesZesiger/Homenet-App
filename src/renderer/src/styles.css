@@ -139,7 +139,9 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 
 /* ---- Apps row ---------------------------------------------------------- */
 .app-panel {
-  flex: 1;
+  /* Never shorter than its tiles: a notice above takes space from the lower
+     panels instead of clipping the row. */
+  flex: 1 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -268,8 +270,8 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 .carousel .dots span.on { width: 1.3rem; background: #e8eef8; }
 
 .stat-tile { width: 100%; display: flex; flex-direction: column; gap: 0.9rem; padding-top: 0.4rem; }
-.stat-head { display: flex; justify-content: space-between; align-items: center; }
-.stat-head h3 { font-size: 1.15rem; letter-spacing: -0.01em; }
+.stat-head { display: flex; align-items: center; gap: 0.75rem; }
+.stat-head h3 { margin-right: auto; font-size: 1.15rem; letter-spacing: -0.01em; }
 .stat-body { flex: 1; display: grid; grid-template-columns: auto 1fr; gap: 2rem; align-items: stretch; min-height: 0; }
 .stat-figures { display: flex; flex-direction: column; justify-content: center; }
 .stat-figures .hero { font-size: 3.2rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; }

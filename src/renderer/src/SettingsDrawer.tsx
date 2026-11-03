@@ -43,6 +43,10 @@ export function SettingsDrawer({ apps, providers, onOpenPage, onImmichKeyChanged
           <span><strong>Advanced</strong><span className="row-sub">Catalogue, running apps</span></span>
           <ChevronRight />
         </button>
+        {/* Closing the only window quits; apps keep running. */}
+        <button className="nav-item" onClick={() => window.close()}>
+          <span><strong>Exit</strong><span className="row-sub">Close homeapp; apps keep running</span></span>
+        </button>
       </div>
     </Dialog>
   )

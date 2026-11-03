@@ -17,6 +17,9 @@ export interface AppManifest {
   // Accent for the app's tile in the launcher.
   color?: string
   description?: string
+  // Has a web UI people use day to day (not just an admin page), so it also
+  // gets a tile in the Apps row. Every app is a service in the System panel.
+  userUi?: boolean
   // Param key whose value is the host port the app's web UI listens on.
   portParam: string
   healthPath: string
