@@ -139,7 +139,9 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 
 /* ---- Apps row ---------------------------------------------------------- */
 .app-panel {
-  flex: 1;
+  /* Never shorter than its tiles: a notice above takes space from the lower
+     panels instead of clipping the row. */
+  flex: 1 0 auto;
   min-width: 0;
   display: flex;
   flex-direction: column;
