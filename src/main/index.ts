@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { app, BrowserWindow, components, ipcMain, net, powerMonitor, protocol, safeStorage, session, WebContentsView } from 'electron'
 import { autoUpdater } from 'electron-updater'
+import type { Intent } from '../shared/input/intents'
 import type { AppView, CatalogStatus, PhotoResult, ProviderInput, ProviderView, SearchProviderInput, SearchProviderView, StatSample, VaultStatus } from '../shared/types'
 import { checkSettings, loadCatalog, podName, podSample, podStatus, publicView, render, resolveValues, type CatalogApp } from './apps'
 import { CustomList } from './files'
@@ -33,6 +34,8 @@ const ICON_KEY = /^(provider|app)-([a-z0-9-]+)$/
 // After a failed icon lookup (say the app is stopped), wait before retrying.
 const ICON_RETRY_MS = 60_000
 const TMDB_KEY = 'tmdb:apiKey'
+// What a TV page expects from a remote, by controller intent.
+const TV_KEYS: Partial<Record<Intent, string>> = { up: 'Up', down: 'Down', left: 'Left', right: 'Right', activate: 'Enter', back: 'Escape' }
 // A downloaded update waits until nothing is open and no one has touched the
 // box for this long, so it never cuts off a show.
 const UPDATE_IDLE_S = 10 * 60
@@ -294,6 +297,8 @@ function openGuest(url: string) {
     webPreferences: { preload: join(__dirname, '../preload/guest.js'), sandbox: true, contextIsolation: true },
   })
   const view = guest
+  const agent = providerForUrl(url, providers.all())?.userAgent
+  if (agent) view.webContents.setUserAgent(agent)
   // Keep everything in this one view: popups would open windows the
   // controller can't reach.
   view.webContents.setWindowOpenHandler(({ url }) => {
@@ -510,6 +515,16 @@ function registerIpc() {
     else closeGuest()
   })
   ipcMain.on('guest:home', closeGuest)
+  // TV pages run their own remote navigation, so the guest's controller
+  // presses real keys there instead of moving focus.
+  ipcMain.handle('guest:tv', (event) =>
+    event.sender === guest?.webContents && !!providerForUrl(event.senderFrame?.url ?? '', providers.all())?.userAgent)
+  ipcMain.on('guest:key', (event, intent: Intent) => {
+    const keyCode = TV_KEYS[intent]
+    if (!keyCode || event.sender !== guest?.webContents) return
+    guest.webContents.sendInputEvent({ type: 'keyDown', keyCode })
+    guest.webContents.sendInputEvent({ type: 'keyUp', keyCode })
+  })
 }
 
 // New versions come from the GitHub Releases that CI publishes for v* tags.

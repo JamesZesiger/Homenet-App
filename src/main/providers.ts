@@ -17,6 +17,9 @@ export interface Provider {
   domains: string[]
   // Page to find the tile icon on, when home only declares a small one.
   iconPage?: string
+  // Sites with a TV version (YouTube's) only serve it to TVs, so the hosted
+  // view presents as one; the controller then presses the page's own keys.
+  userAgent?: string
   custom?: boolean
 }
 
@@ -67,9 +70,14 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: 'youtube', name: 'YouTube', color: '#ff0000',
-    home: 'https://www.youtube.com/',
-    search: 'https://www.youtube.com/results?search_query={q}',
+    // The TV version signs in with a code entered on a phone; Google blocks
+    // signing in to the desktop site from an embedded browser.
+    home: 'https://www.youtube.com/tv',
+    search: 'https://www.youtube.com/tv#/search?q={q}',
+    iconPage: 'https://www.youtube.com/',
     domains: ['youtube.com', 'google.com'],
+    // In the format YouTube's own TV apps (Cobalt) send.
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Cobalt/27.lts.3.1040976-gold (unlike Gecko) v8/13.8.258.54-jit gles Starboard/18, homeapp_DESKTOP_x8664_2026/1.0 (homeapp, Windows) com.homeapp.app/1.0',
   },
 ]
 
