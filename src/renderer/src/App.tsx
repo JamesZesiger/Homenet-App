@@ -104,7 +104,7 @@ export function App() {
               <TileIcon iconKey={`provider-${p.id}`} name={p.name} fill />
             </button>
           ))}
-          {apps.map((a) => (
+          {apps.filter((a) => a.manifest.userUi).map((a) => (
             <button key={a.manifest.id} className="tile" disabled={a.status === 'unavailable'}
               aria-label={a.manifest.name} title={a.manifest.name}
               style={{ '--brand': a.manifest.color ?? '#52514e' } as CSSProperties}
