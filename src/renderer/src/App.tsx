@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
-import type { AppView, ProviderView } from '../../shared/types'
+import type { AppView, ProviderView, UpdateStatus } from '../../shared/types'
 import { Clock } from './Clock'
 import { SearchIcon, SettingsIcon } from './Icons'
 import { PhotoCarousel } from './PhotoCarousel'
@@ -22,6 +22,7 @@ export function App() {
   const [page, setPage] = useState<SettingsPage | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [immichKeyVersion, setImmichKeyVersion] = useState(0)
+  const [update, setUpdate] = useState<UpdateStatus | null>(null)
   const row = useRef<HTMLDivElement>(null)
 
   const loadProviders = useCallback(() => {
@@ -33,6 +34,11 @@ export function App() {
     loadProviders()
     return window.homeapp.onStatus(setApps)
   }, [loadProviders])
+
+  useEffect(() => {
+    window.homeapp.updateStatus().then(setUpdate)
+    return window.homeapp.onUpdateStatus(setUpdate)
+  }, [])
 
   // Controller and keyboard shortcuts, raised by main.tsx.
   useEffect(() => {
@@ -83,6 +89,14 @@ export function App() {
     <main className="home">
       <header className="topbar">
         <Clock />
+        {update && (
+          <div className="update" role="status">
+            {update.percent < 100
+              ? `Downloading update ${update.version} · ${Math.round(update.percent)}%`
+              : `Update ${update.version} ready · installs when idle or when homeapp closes`}
+            <progress max={100} value={update.percent} />
+          </div>
+        )}
         <button className="icon-button" aria-label="Settings" onClick={() => setLayer('settings')}>
           <SettingsIcon />
         </button>

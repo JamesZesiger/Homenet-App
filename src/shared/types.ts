@@ -83,6 +83,13 @@ export interface SearchProviderView {
   custom: boolean
 }
 
+// A new homeapp version on its way in.
+export interface UpdateStatus {
+  version: string
+  // Downloaded so far; 100 once it's waiting to install.
+  percent: number
+}
+
 export interface CatalogStatus {
   state: 'idle' | 'loading' | 'ready' | 'error' | 'no-key'
   titles: number
@@ -157,6 +164,8 @@ export interface ShellApi {
   catalogStatus(): Promise<CatalogStatus>
   refreshCatalog(): Promise<void>
   onCatalogStatus(listener: (status: CatalogStatus) => void): () => void
+  updateStatus(): Promise<UpdateStatus | null>
+  onUpdateStatus(listener: (status: UpdateStatus | null) => void): () => void
   hasTmdbKey(): Promise<boolean>
   setTmdbKey(key: string): Promise<void>
   stopAllApps(): Promise<void>

@@ -113,6 +113,20 @@ input[data-nav-lock='1'] { caret-color: transparent; }
 .clock .greeting { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
 .clock .time { font-size: 1.6rem; font-weight: 300; color: var(--ink-2); }
 .clock .date { font-size: 0.9rem; color: var(--muted); }
+.update {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+.update progress { width: 100%; height: 0.3rem; appearance: none; border: none; border-radius: 999px; overflow: hidden; background: rgba(255, 255, 255, 0.12); }
+.update progress::-webkit-progress-bar { background: transparent; }
+.update progress::-webkit-progress-value { background: var(--accent); border-radius: 999px; transition: width 250ms var(--ease); }
 
 .notice {
   background: rgba(169, 199, 255, 0.1);

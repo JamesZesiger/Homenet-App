@@ -41,6 +41,8 @@ const api: ShellApi = {
   catalogStatus: () => ipcRenderer.invoke('catalog:status'),
   refreshCatalog: () => ipcRenderer.invoke('catalog:refresh'),
   onCatalogStatus: subscribe('catalog:status'),
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  onUpdateStatus: subscribe('update:status'),
   hasTmdbKey: () => ipcRenderer.invoke('tmdb:hasKey'),
   setTmdbKey: (key) => ipcRenderer.invoke('tmdb:setKey', key),
   stopAllApps: () => ipcRenderer.invoke('apps:stopAll'),

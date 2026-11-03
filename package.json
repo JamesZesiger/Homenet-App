@@ -1,6 +1,6 @@
 {
   "name": "homeapp",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "10-foot home server shell: Electron launcher hosting Podman apps",
   "main": "out/main/index.js",

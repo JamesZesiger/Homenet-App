@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { app, BrowserWindow, components, ipcMain, net, powerMonitor, protocol, safeStorage, session, WebContentsView } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import type { Intent } from '../shared/input/intents'
-import type { AppView, CatalogStatus, PhotoResult, ProviderInput, ProviderView, SearchProviderInput, SearchProviderView, StatSample, VaultStatus } from '../shared/types'
+import type { AppView, CatalogStatus, PhotoResult, ProviderInput, ProviderView, SearchProviderInput, SearchProviderView, StatSample, UpdateStatus, VaultStatus } from '../shared/types'
 import { checkSettings, loadCatalog, podName, podSample, podStatus, publicView, render, resolveValues, type CatalogApp } from './apps'
 import { CustomList } from './files'
 import { IconCache } from './icons'
@@ -480,6 +480,7 @@ function registerIpc() {
     const url = await playUrl(key, service)
     if (url && token === guestToken) openGuest(url)
   })
+  ipcMain.handle('update:status', () => update)
   ipcMain.handle('catalog:status', () => catalogStatus())
   ipcMain.handle('catalog:refresh', () => refreshCatalog(true))
   ipcMain.handle('tmdb:hasKey', () => !!tmdbKey())
@@ -527,10 +528,24 @@ function registerIpc() {
   })
 }
 
+let update: UpdateStatus | null = null
+function pushUpdate(next: UpdateStatus | null) {
+  update = next
+  if (win && !win.isDestroyed()) win.webContents.send('update:status', next)
+}
+
 // New versions come from the GitHub Releases that CI publishes for v* tags.
 function autoUpdate() {
-  autoUpdater.on('error', (err) => console.error('Update failed:', err.message))
-  autoUpdater.once('update-downloaded', () => {
+  autoUpdater.on('error', (err) => {
+    console.error('Update failed:', err.message)
+    pushUpdate(null)
+  })
+  autoUpdater.on('update-available', (info) => pushUpdate({ version: info.version, percent: 0 }))
+  autoUpdater.on('download-progress', (progress) => {
+    if (update) pushUpdate({ ...update, percent: progress.percent })
+  })
+  autoUpdater.once('update-downloaded', (info) => {
+    pushUpdate({ version: info.version, percent: 100 })
     setInterval(() => {
       if (!guest && powerMonitor.getSystemIdleTime() >= UPDATE_IDLE_S) autoUpdater.quitAndInstall(true, true)
     }, 60_000)
