@@ -47,6 +47,11 @@ The castlabs Electron binary downloads on first launch (or run
 `sudo sysctl net.ipv4.ip_unprivileged_port_start=53` (persist it in
 `/etc/sysctl.d/`), or set Pi-hole's DNS port to e.g. 5353 in its settings.
 
+**Pi-hole on a tailnet:** the Pi-hole pod joins Tailscale as its own device,
+`pihole`. On first start, open the login URL from
+`podman logs homeapp-pihole-tailscale`, disable the device's key expiry, and
+use its `100.x` address as the tailnet's DNS server.
+
 **Behind the Cisco Umbrella proxy:** an npm `cafile` holding only the Umbrella
 root breaks downloads from hosts it doesn't intercept (GitHub). Point `cafile`
 at a bundle of the system CAs plus the Umbrella root instead.
