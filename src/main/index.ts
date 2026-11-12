@@ -601,6 +601,10 @@ app.whenReady().then(async () => {
   registerIpc()
   createWindow()
   setInterval(tick, STATUS_INTERVAL_MS)
+  // Windows Update reboots the box overnight; launching at login is what
+  // brings the apps back. Registered once, so turning it off in Task Manager
+  // sticks. A no-op on Linux.
+  if (!dev && !app.getLoginItemSettings().openAtLogin) app.setLoginItemSettings({ openAtLogin: true })
   // After a reboot nothing is running: start Podman and the apps left on.
   resumeApps()
   // First start builds the catalogue; after that it refreshes weekly.
