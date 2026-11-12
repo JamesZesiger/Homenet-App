@@ -23,6 +23,26 @@ spec:
         - { name: FTLCONF_dns_upstreams, value: '${PIHOLE_UPSTREAMS}' }
       volumeMounts:
         - { name: etc, mountPath: /etc/pihole }
+    # Joins the tailnet as its own device, so tailnet DNS reaches Pi-hole
+    # without passing through the host's networking (on Windows, WSL never
+    # receives traffic that arrives over the host's Tailscale). First start
+    # logs a login URL: `podman logs homeapp-pihole-tailscale`.
+    - name: tailscale
+      image: docker.io/tailscale/tailscale:stable
+      env:
+        - { name: TS_HOSTNAME, value: pihole }
+        - { name: TS_STATE_DIR, value: /var/lib/tailscale }
+        - { name: TS_USERSPACE, value: 'false' }
+        - { name: TS_ACCEPT_DNS, value: 'false' }
+      securityContext:
+        capabilities: { add: [NET_ADMIN, NET_RAW] }
+      volumeMounts:
+        - { name: tailscale, mountPath: /var/lib/tailscale }
+        - { name: tun, mountPath: /dev/net/tun }
   volumes:
     - name: etc
       persistentVolumeClaim: { claimName: homeapp-pihole-etc }
+    - name: tailscale
+      persistentVolumeClaim: { claimName: homeapp-pihole-tailscale }
+    - name: tun
+      hostPath: { path: /dev/net/tun, type: CharDevice }
