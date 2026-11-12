@@ -281,12 +281,14 @@ function fitGuest() {
 // the user has since moved on and drop its result.
 let guestToken = 0
 
-function closeGuest() {
+// `closed` when the page already closed itself, leaving nothing to close.
+function closeGuest(closed = false) {
   guestToken++
   if (!guest || !win) return
-  win.contentView.removeChildView(guest)
-  guest.webContents.close()
+  const view = guest
   guest = null
+  win.contentView.removeChildView(view)
+  if (!closed) view.webContents.close()
   win.webContents.focus()
 }
 
@@ -297,6 +299,12 @@ function openGuest(url: string) {
     webPreferences: { preload: join(__dirname, '../preload/guest.js'), sandbox: true, contextIsolation: true },
   })
   const view = guest
+  // A page can close itself (window.close(), as a TV app's Exit does). Its
+  // webContents is gone by then, and a guest left pointing at it would make
+  // every later open throw.
+  view.webContents.once('destroyed', () => {
+    if (guest === view) closeGuest(true)
+  })
   const agent = providerForUrl(url, providers.all())?.userAgent
   if (agent) view.webContents.setUserAgent(agent)
   // Keep everything in this one view: popups would open windows the
@@ -515,7 +523,7 @@ function registerIpc() {
     if (nav?.canGoBack()) nav.goBack()
     else closeGuest()
   })
-  ipcMain.on('guest:home', closeGuest)
+  ipcMain.on('guest:home', () => closeGuest())
   // TV pages run their own remote navigation, so the guest's controller
   // presses real keys there instead of moving focus.
   ipcMain.handle('guest:tv', (event) =>
